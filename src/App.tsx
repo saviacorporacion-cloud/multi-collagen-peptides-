@@ -677,33 +677,51 @@ export default function App() {
               </div>
 
               {/* GPS Location Status */}
-              <div className={`rounded-xl p-3 flex items-center gap-3 border text-xs ${
-                geoStatus === 'granted' ? 'bg-green-50 border-green-100 text-green-700' :
-                geoStatus === 'loading' ? 'bg-yellow-50 border-yellow-100 text-yellow-700' :
-                geoStatus === 'denied' ? 'bg-orange-50 border-orange-100 text-orange-700' :
-                'bg-white border-fuchsia-200 text-fuchsia-800'
-              }`}>
-                {geoStatus !== 'idle' && <MapPin className="w-4 h-4 flex-shrink-0" />}
-                <div className="flex-1 w-full">
-                  {geoStatus === 'granted' && userCoords ? (
-                    <span className="font-bold text-[10px]">📍 Ubicación detectada: {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}</span>
-                  ) : geoStatus === 'loading' ? (
-                    <span className="font-bold text-[10px]">Obteniendo tu ubicación...</span>
-                  ) : geoStatus === 'denied' ? (
-                    <button type="button" onClick={requestLocation} className="font-bold text-[10px] text-orange-700 underline text-left">
-                      ⚠️ Permiso denegado. Toca aquí para reintentar.
-                    </button>
-                  ) : (
-                    <button type="button" onClick={requestLocation} className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-3 px-3 rounded-lg shadow-md transition-all active:scale-95 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 animate-bounce">
-                      <MapPin className="w-4 h-4"/> TOCA AQUÍ PARA COMPARTIR TU UBICACIÓN
-                    </button>
+              <div className="pt-2">
+                <div className={`w-full rounded-2xl p-4 flex items-center gap-4 shadow-sm border ${
+                  geoStatus === 'granted' ? 'bg-green-50 border-green-200 text-green-800' :
+                  geoStatus === 'loading' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                  geoStatus === 'denied' ? 'bg-orange-50 border-orange-200 text-orange-800' :
+                  'bg-white border-fuchsia-200 text-fuchsia-800'
+                }`}>
+                  {geoStatus !== 'idle' && (
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      geoStatus === 'granted' ? 'bg-green-100 text-green-600' :
+                      geoStatus === 'loading' ? 'bg-yellow-100 text-yellow-600' :
+                      geoStatus === 'denied' ? 'bg-orange-100 text-orange-600' :
+                      'bg-fuchsia-100 text-fuchsia-600'
+                    }`}>
+                      <MapPin className="w-5 h-5" />
+                    </div>
                   )}
+                  <div className="flex-1 w-full">
+                    {geoStatus === 'granted' && userCoords ? (
+                      <>
+                        <h4 className="text-xs font-bold mb-0.5">📍 Ubicación detectada correctamente</h4>
+                        <p className="text-[10px] font-mono">{userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}</p>
+                      </>
+                    ) : geoStatus === 'loading' ? (
+                      <h4 className="text-xs font-bold">Obteniendo tu ubicación exacta...</h4>
+                    ) : geoStatus === 'denied' ? (
+                      <button type="button" onClick={requestLocation} className="text-[10px] font-bold underline hover:opacity-80 transition-opacity text-left text-orange-700">
+                        ⚠️ Permiso denegado. Toca aquí para reintentar o actívalo en tu navegador.
+                      </button>
+                    ) : (
+                      <button type="button" onClick={requestLocation} className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-3.5 px-4 rounded-xl shadow-lg transition-all active:scale-95 text-xs sm:text-sm flex items-center justify-center gap-2 animate-bounce">
+                        <MapPin className="w-4 h-4"/> TOCA AQUÍ PARA COMPARTIR TU UBICACIÓN
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-4.5 px-8 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] hover:shadow-[0_0_60px_rgba(37,211,102,0.5)] transition-all flex items-center justify-center gap-2.5 text-base uppercase tracking-wide hover:scale-[1.02] active:scale-95">
-                <MessageCircle className="w-5 h-5" />
+              <button 
+                type="submit" 
+                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-5 px-8 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.4)] hover:shadow-[0_0_60px_rgba(37,211,102,0.6)] transition-all flex items-center justify-center gap-2.5 text-lg sm:text-xl mt-4 uppercase tracking-wide hover:scale-[1.02] animate-pulse"
+                style={{ animationDuration: '2s' }}
+              >
+                <MessageCircle className="w-6 h-6" />
                 CONFIRMAR MI COMPRA
               </button>
 
