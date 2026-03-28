@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Star, CheckCircle2, Truck, ShieldCheck, ArrowRight, Lock, Sparkles, Droplets, Shield, Award, ChevronLeft, ChevronRight, Flame, Timer, MessageCircle, MapPin, X, Ban, Heart, Eye } from 'lucide-react';
+import { Star, Truck, ShieldCheck, Lock, Sparkles, Droplets, Shield, Award, ChevronLeft, ChevronRight, Flame, Timer, MessageCircle, MapPin, X, Ban, Heart, Eye, ChevronDown, Package, Clock, CheckCircle2 } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -23,21 +23,13 @@ export default function App() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const [currentReview, setCurrentReview] = useState(0);
-  const [direction, setDirection] = useState(1);
   const [timeLeft, setTimeLeft] = useState(23 * 60);
   const [stock, setStock] = useState(13);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [currentBASlide, setCurrentBASlide] = useState(0);
-
-  const reviews = [
-    { name: "Claudia Sanchez", city: "Lima", text: "Siempre tuve las uñas súper débiles, se me quebraban por todo. Desde que empecé con el colágeno las siento mucho más duras y ya no se parten igual. Se nota el cambio.", img: "https://randomuser.me/api/portraits/women/44.jpg" },
-    { name: "Valentina Páez", city: "Arequipa", text: "De verdad que esto ayuda. Llevo semanas tomándolo y la piel se ve más firme. Las uñas ya no se rompen y el cabello se siente distinto. Sí vale la pena, bravazo.", img: "https://randomuser.me/api/portraits/women/68.jpg" },
-    { name: "Fernanda Muñoz", city: "Trujillo", text: "Mi piel siempre se veía opaca y sin firmeza. Con el colágeno la siento más hidratada y como más suave. También noto el cabello más bonito. Recontra recomendado.", img: "https://randomuser.me/api/portraits/women/32.jpg" },
-    { name: "Daniela Vargas", city: "Cusco", text: "Lo mezclo todas las mañanas con mi café y se disuelve perfecto, sin grumos. Llevo dos meses y el 'glow' natural que tiene mi rostro ahora es increíble.", img: "https://randomuser.me/api/portraits/women/12.jpg" },
-    { name: "Andrea Cárdenas", city: "Piura", text: "Soy muy exigente con los suplementos y este cumple todo lo que promete. En menos de un mes mi cabello recuperó su brillo y mi piel se siente súper hidratada.", img: "https://randomuser.me/api/portraits/women/26.jpg" },
-    { name: "Javier Luna", city: "Chiclayo", text: "Increíble el cambio. Me siento con mucha más energía durante el día y mi bienestar general ha mejorado muchísimo. ¡Totalmente recomendado!", img: "https://randomuser.me/api/portraits/men/32.jpg" }
-  ];
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'granted' | 'denied'>('idle');
+  const [showScrollIndicator, setShowScrollIndicator] = useState(true);
 
   const baImages = [
     { src: '/img7.jpeg', label: 'Piel del Rostro' },
@@ -71,15 +63,6 @@ export default function App() {
       });
     }, 15000);
     return () => clearInterval(stockTimer);
-  }, []);
-
-  // Auto-rotate reviews
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDirection(1);
-      setCurrentReview((prev) => (prev + 1) % reviews.length);
-    }, 5000);
-    return () => clearInterval(timer);
   }, []);
 
   // Video IntersectionObserver autoplay
@@ -122,6 +105,53 @@ export default function App() {
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
+  // Hide scroll indicator on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 200) setShowScrollIndicator(false);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Request geolocation when form section is visible
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoStatus('denied');
+      return;
+    }
+    setGeoStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setGeoStatus('granted');
+      },
+      () => {
+        setGeoStatus('denied');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Auto-request location when form comes into view
+  useEffect(() => {
+    const formEl = formRef.current;
+    if (!formEl) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && geoStatus === 'idle') {
+          requestLocation();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(formEl);
+    return () => observer.disconnect();
+  }, [geoStatus]);
 
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,7 +197,28 @@ export default function App() {
   const confirmOrder = () => {
     const phoneNumber = "51919749480";
     const { nombre, telefono, ciudad, distrito, direccion, referencia, horaEntrega } = formData;
-    const message = `*¡Hola! Quiero confirmar mi pedido de la Promo 2x1 de Multi Collagen Peptides (S/109.00)* 🛍️\n\n*Mis datos de envío son:*\n👤 *Nombre:* ${nombre}\n📱 *Teléfono:* ${telefono}\n🏙️ *Ciudad:* ${ciudad}\n📍 *Distrito:* ${distrito}\n🏠 *Dirección:* ${direccion}\n🗺️ *Referencia:* ${referencia || 'Ninguna'}\n⏰ *Hora de entrega:* ${horaEntrega}\n\nPor favor, confírmenme el pedido.`;
+
+    let coordsText = '';
+    if (userCoords) {
+      coordsText = `\n📌 *Coordenadas GPS:* ${userCoords.lat.toFixed(6)}, ${userCoords.lng.toFixed(6)}\n🗺️ *Ver en mapa:* https://www.google.com/maps?q=${userCoords.lat},${userCoords.lng}`;
+    }
+
+    const message = `*¡NUEVO PEDIDO - PROMO 2x1 MULTI COLLAGEN PEPTIDES!* 🛍️✨\n\n` +
+      `📦 *Producto:* 2x Multi Collagen Peptides\n` +
+      `💰 *Precio:* S/ 109.00 (Promo 2x1)\n` +
+      `🚚 *Envío:* GRATIS\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `📋 *DATOS DEL CLIENTE*\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *Nombre:* ${nombre}\n` +
+      `📱 *Teléfono:* ${telefono}\n` +
+      `🏙️ *Ciudad:* ${ciudad}\n` +
+      `📍 *Distrito:* ${distrito}\n` +
+      `🏠 *Dirección:* ${direccion}\n` +
+      `🗺️ *Referencia:* ${referencia || 'No especificada'}\n` +
+      `⏰ *Hora de entrega:* ${horaEntrega}` +
+      coordsText +
+      `\n\n💳 *Pago:* Contraentrega 🚚`;
 
     if (window.ttq) {
       window.ttq.track('PlaceAnOrder', {
@@ -181,31 +232,30 @@ export default function App() {
   };
 
   const inputClass = (name: string) =>
-    `w-full px-4 py-4 rounded-2xl border-2 focus:ring-2 focus:outline-none transition-all text-gray-900 bg-white placeholder-gray-400 text-base ${
+    `w-full px-4 py-3.5 rounded-xl border-2 focus:ring-2 focus:outline-none transition-all text-sm font-medium text-gray-900 bg-white placeholder-gray-400 ${
       touched[name] && formErrors[name]
-        ? 'border-red-400 focus:ring-red-400 bg-red-50'
+        ? 'border-red-300 focus:ring-red-300 bg-red-50/50'
         : touched[name] && !formErrors[name]
-        ? 'border-fuchsia-400 focus:ring-fuchsia-400 bg-fuchsia-50'
-        : 'border-gray-200 focus:ring-fuchsia-500 focus:border-fuchsia-500'
+        ? 'border-green-300 focus:ring-green-300 bg-green-50/30'
+        : 'border-fuchsia-200/60 focus:ring-fuchsia-400 focus:border-fuchsia-400 hover:border-fuchsia-300'
     }`;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* ═══════════════════════════════════════════════════════ */}
       {/* STICKY COUNTDOWN BAR */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-[100] w-full bg-[#0f0f0f] text-white shadow-2xl border-b border-fuchsia-900/30">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-4 text-[11px] sm:text-xs md:text-sm font-medium tracking-wide">
-          <div className="flex items-center gap-2 text-fuchsia-200">
-            <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse" />
-            <span className="font-bold tracking-wider text-white uppercase">Envío Gratis a todo el Perú</span>
-            <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse hidden sm:inline" />
+        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-2 text-[10px] sm:text-xs font-medium tracking-wide">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-fuchsia-400 animate-pulse" />
+            <span className="font-black tracking-wider text-white uppercase text-[9px] sm:text-[11px]">Envío Gratis 🇵🇪</span>
           </div>
           <div className="flex items-center gap-2 font-bold">
-            <Timer className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse" />
-            <span className="text-gray-300">Oferta expira en:</span>
-            <div className="bg-black/50 border border-fuchsia-500/30 px-3 py-0.5 rounded-lg text-yellow-400 font-mono text-sm sm:text-base shadow-[0_0_12px_rgba(250,204,21,0.15)]">
-              ⏳ {formatTime(timeLeft)}
+            <Timer className="w-3 h-3 text-fuchsia-400 animate-pulse" />
+            <span className="text-gray-400 hidden sm:inline text-[10px]">Oferta expira en:</span>
+            <div className="bg-black/50 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg text-yellow-400 font-mono text-xs sm:text-sm shadow-[0_0_12px_rgba(250,204,21,0.15)]">
+              {formatTime(timeLeft)}
             </div>
           </div>
         </div>
@@ -215,20 +265,20 @@ export default function App() {
       {/* FLOATING STOCK BADGE */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="fixed bottom-20 sm:bottom-6 left-3 z-50" onClick={scrollToForm}>
-        <div className="bg-white/95 backdrop-blur-xl px-3 py-2.5 rounded-2xl shadow-2xl border border-red-100 flex items-center gap-3 cursor-pointer hover:scale-105 transition-all">
+        <div className="bg-white/95 backdrop-blur-xl px-3 py-2 rounded-2xl shadow-2xl border border-red-100 flex items-center gap-2.5 cursor-pointer hover:scale-105 transition-all">
           <div className="relative flex-shrink-0">
             <div className="absolute -inset-1 bg-red-500 rounded-xl animate-ping opacity-10"></div>
-            <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/30">
-              <Flame className="w-5 h-5 animate-pulse" />
+            <div className="w-9 h-9 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/30">
+              <Flame className="w-4 h-4 animate-pulse" />
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="flex items-center gap-1 mb-0.5">
               <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-[9px] font-black text-red-600 tracking-widest uppercase">¡Alta Demanda!</span>
+              <span className="text-[8px] font-black text-red-600 tracking-widest uppercase">¡Alta Demanda!</span>
             </div>
-            <p className="text-xs font-black text-gray-800 leading-tight">
-              Solo quedan <span className="text-red-600 text-base tabular-nums">{stock}</span> unidades
+            <p className="text-[11px] font-black text-gray-800 leading-tight">
+              Quedan <span className="text-red-600 text-sm tabular-nums">{stock}</span> uds.
             </p>
           </div>
         </div>
@@ -237,92 +287,103 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* MOBILE STICKY CTA */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.1)]">
-        <button onClick={scrollToForm} className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-lg py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+      <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.1)]">
+        <button onClick={scrollToForm} className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-base py-3.5 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
           <MessageCircle className="w-5 h-5" />
-          ¡QUIERO MI PROMO 2x1!
+          ¡PEDIR AHORA — PROMO 2x1!
         </button>
       </div>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* HERO SECTION — Full-Width Image */}
+      {/* HERO SECTION — Sin precio, con scroll indicator */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="relative bg-gradient-to-b from-fuchsia-950 via-fuchsia-900 to-fuchsia-800 overflow-hidden">
-        {/* Background decorations */}
+      <section className="relative bg-gradient-to-b from-fuchsia-950 via-fuchsia-900 to-fuchsia-800 overflow-hidden min-h-[85vh] flex flex-col">
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-fuchsia-700 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
         <div className="absolute top-48 -left-24 w-56 h-56 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-        <div className="max-w-4xl mx-auto px-4 pt-8 pb-6 relative z-10">
+        <div className="max-w-lg mx-auto px-4 pt-6 pb-4 relative z-10 flex-1 flex flex-col">
           {/* Rating Badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-4">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
             <div className="flex text-yellow-400">
-              {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+              {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-current" />)}
             </div>
-            <span className="text-fuchsia-200 text-xs font-bold ml-1">+6,542 Reseñas verificadas</span>
+            <span className="text-fuchsia-200 text-[10px] font-bold ml-1">+6,542 Reseñas de peruanas felices</span>
           </div>
 
-          {/* Stock Alert */}
-          <div className="flex justify-center mb-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 border border-red-400/30 text-red-200 font-bold text-xs">
-              <Flame className="w-4 h-4 text-red-400" />
-              ¡Últimas {stock} unidades en stock!
-            </div>
-          </div>
+          {/* Main Headline (NO PRICE) */}
+          <h1 className="text-center text-3xl sm:text-4xl font-black text-white leading-[1.1] mb-2 tracking-tight">
+            Piel Más Firme,{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-fuchsia-300">
+              Cabello Más Fuerte
+            </span>{' '}
+            y Uñas Sin Quiebre
+          </h1>
+          <p className="text-center text-fuchsia-200 text-xs font-medium mb-4 max-w-xs mx-auto leading-relaxed">
+            El Multi Colágeno #1 en Perú. 5 tipos de colágeno + Biotina + Ácido Hialurónico
+          </p>
 
-          {/* Main Hero Image */}
-          <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-2 border-white/10 mb-6 mx-auto max-w-lg">
+          {/* Hero Image */}
+          <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-2 border-white/10 mx-auto max-w-sm flex-1 min-h-0">
             <img
               src="/img1.jpeg"
               alt="Multi Collagen Peptides - Piel más firme, cabello más fuerte y uñas sin quiebre"
-              className="w-full h-auto object-cover"
+              className="w-full h-full object-cover"
               loading="eager"
             />
-          </div>
-
-          {/* Price Section */}
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <span className="text-xl text-fuchsia-300 line-through opacity-70 font-bold">S/ 218.00</span>
-              <span className="text-4xl sm:text-5xl text-yellow-400 font-black drop-shadow-lg">S/ 109.00</span>
-            </div>
-            <div className="inline-block bg-fuchsia-600 text-white px-5 py-2 rounded-full font-black text-sm border border-fuchsia-400 shadow-lg">
-              ¡LLEVAS 2 POR EL PRECIO DE 1!
-            </div>
           </div>
 
           {/* CTA Button */}
           <button
             onClick={scrollToForm}
-            className="w-full max-w-md mx-auto block bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+            className="w-full max-w-sm mx-auto mt-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-lg py-4 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
           >
-            <MessageCircle className="w-6 h-6" />
-            ¡COMPRAR AHORA!
+            <MessageCircle className="w-5 h-5" />
+            ¡QUIERO SABER MÁS!
           </button>
 
-          <div className="flex justify-center items-center gap-4 mt-4 text-fuchsia-200 text-xs font-bold">
-            <span className="flex items-center gap-1"><Lock className="w-3.5 h-3.5 text-green-400" /> Pago Seguro</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> SSL Certificado</span>
+          <div className="flex justify-center items-center gap-4 mt-2 text-fuchsia-200 text-[10px] font-bold">
+            <span className="flex items-center gap-1"><Lock className="w-3 h-3 text-green-400" /> Pago Seguro</span>
+            <span className="flex items-center gap-1"><Truck className="w-3 h-3 text-blue-400" /> Envío Gratis</span>
+            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-yellow-400" /> Garantía 30d</span>
           </div>
         </div>
+
+        {/* ═══ Professional Scroll Indicator ═══ */}
+        {showScrollIndicator && (
+          <div
+            className="flex flex-col items-center pb-6 cursor-pointer group animate-fade-in"
+            onClick={() => window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' })}
+          >
+            <span className="text-fuchsia-300/60 text-[9px] font-bold tracking-[0.3em] uppercase mb-2 group-hover:text-fuchsia-200 transition-colors">
+              Desliza para descubrir
+            </span>
+            <div className="relative w-6 h-10 border-2 border-fuchsia-400/30 rounded-full flex justify-center p-1 group-hover:border-fuchsia-400/60 transition-colors">
+              <div className="w-1 h-2.5 bg-gradient-to-b from-yellow-400 to-fuchsia-400 rounded-full animate-scroll-dot shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
+            </div>
+            <div className="mt-1 flex flex-col items-center">
+              <ChevronDown className="w-4 h-4 text-fuchsia-300/40 animate-bounce-slow" />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/* TRUST BADGES */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="bg-white border-y border-fuchsia-100 py-6">
+      <section className="bg-white border-y border-fuchsia-100 py-5">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             {[
               { icon: Truck, title: "Envío Gratis", desc: "A todo el Perú" },
-              { icon: ShieldCheck, title: "Pago Seguro", desc: "Paga al recibir" },
-              { icon: Award, title: "Garantía", desc: "30 días o devolvemos" },
+              { icon: ShieldCheck, title: "Pago Seguro", desc: "Pagas al recibir" },
+              { icon: Award, title: "Garantía", desc: "30 días" },
             ].map((badge, idx) => (
-              <div key={idx} className="flex flex-col items-center text-center p-3 rounded-2xl bg-fuchsia-50/50 border border-fuchsia-100">
-                <div className="w-12 h-12 bg-fuchsia-100 rounded-full flex items-center justify-center mb-2 text-fuchsia-600">
-                  <badge.icon className="w-6 h-6" />
+              <div key={idx} className="flex flex-col items-center text-center p-3 rounded-2xl bg-gradient-to-b from-fuchsia-50 to-white border border-fuchsia-100/50">
+                <div className="w-11 h-11 bg-fuchsia-100 rounded-full flex items-center justify-center mb-1.5 text-fuchsia-600">
+                  <badge.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-xs font-black text-gray-900 mb-0.5">{badge.title}</h3>
-                <p className="text-[10px] text-gray-500 font-medium leading-tight">{badge.desc}</p>
+                <h3 className="text-[10px] font-black text-gray-900 mb-0.5 uppercase tracking-wider">{badge.title}</h3>
+                <p className="text-[9px] text-gray-500 font-medium">{badge.desc}</p>
               </div>
             ))}
           </div>
@@ -332,13 +393,13 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* VIDEO SECTION */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="py-12 px-4 bg-gray-50">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-2 text-gray-900">
+      <section className="py-10 px-4 bg-gray-50">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-1 text-gray-900">
             ¿Por qué todas lo eligen?
           </h2>
-          <p className="text-center text-gray-500 text-sm mb-6 font-medium">Mira el video y descubre la ciencia detrás de tu belleza</p>
-          <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-fuchsia-100 bg-fuchsia-100">
+          <p className="text-center text-gray-400 text-xs mb-5 font-medium">Mira el video y descubre la ciencia detrás de tu belleza</p>
+          <div className="rounded-2xl overflow-hidden shadow-xl border border-fuchsia-100 bg-black">
             <video
               ref={videoRef}
               src="/video.mp4"
@@ -356,28 +417,28 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* BENEFITS SECTION */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-2 text-gray-900">
-            El Secreto para Tu Belleza Natural
+      <section className="py-10 px-4 bg-white">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-1 text-gray-900">
+            El Secreto para Tu Belleza
           </h2>
-          <p className="text-center text-gray-500 text-sm mb-8 font-medium">5 tipos de colágeno + Biotina + Vitamina C + Ácido Hialurónico</p>
+          <p className="text-center text-gray-400 text-xs mb-6 font-medium">5 tipos de colágeno + Biotina + Vitamina C + Ác. Hialurónico</p>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3">
             {[
-              { icon: Droplets, title: "Piel Más Firme y Elástica", desc: "Reduce visiblemente líneas de expresión y recupera el brillo natural de tu rostro desde adentro.", color: "fuchsia" },
-              { icon: Sparkles, title: "Cabello Más Fuerte", desc: "Detén la caída y promueve un crecimiento acelerado y resistente. Recupera su brillo.", color: "purple" },
-              { icon: Shield, title: "Uñas Sin Quiebre", desc: "Olvídate de las uñas frágiles. Crecerán duras, largas y saludables.", color: "pink" },
-              { icon: Heart, title: "Articulaciones Saludables", desc: "Fortalece articulaciones, tendones y ligamentos para moverte con libertad.", color: "rose" },
-              { icon: Eye, title: "Hidratación Profunda", desc: "El ácido hialurónico retiene humedad, dándote una piel jugosa y radiante.", color: "violet" },
+              { icon: Droplets, title: "Piel Más Firme y Elástica", desc: "Reduce líneas de expresión y recupera el brillo natural de tu rostro." },
+              { icon: Sparkles, title: "Cabello Más Fuerte", desc: "Detén la caída y promueve un crecimiento acelerado y resistente." },
+              { icon: Shield, title: "Uñas Sin Quiebre", desc: "Olvídate de las uñas frágiles. Crecerán duras, largas y saludables." },
+              { icon: Heart, title: "Articulaciones Saludables", desc: "Fortalece articulaciones, tendones y ligamentos." },
+              { icon: Eye, title: "Hidratación Profunda", desc: "El ácido hialurónico retiene humedad para una piel radiante." },
             ].map((benefit, idx) => (
-              <div key={idx} className="flex items-start gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                <div className="w-12 h-12 bg-fuchsia-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-fuchsia-600">
-                  <benefit.icon className="w-6 h-6" />
+              <div key={idx} className="flex items-start gap-3.5 p-4 rounded-2xl bg-gray-50/80 border border-gray-100 hover:shadow-md transition-all duration-300">
+                <div className="w-10 h-10 bg-fuchsia-100 rounded-xl flex items-center justify-center flex-shrink-0 text-fuchsia-600">
+                  <benefit.icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-gray-900 mb-1">{benefit.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{benefit.desc}</p>
+                  <h3 className="text-sm font-black text-gray-900 mb-0.5">{benefit.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">{benefit.desc}</p>
                 </div>
               </div>
             ))}
@@ -386,16 +447,14 @@ export default function App() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* FORMULA & COMPARISON (Full Image) */}
+      {/* FORMULA (Full Image) */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="py-12 px-4 bg-fuchsia-50">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-2 text-gray-900">
-            Fórmula 100% Natural
-          </h2>
-          <p className="text-center text-gray-500 text-sm mb-6 font-medium">Información suplementaria y comparación</p>
-          <div className="rounded-3xl overflow-hidden shadow-xl border-2 border-fuchsia-100 bg-white">
-            <img src="/img5.jpeg" alt="Información del suplemento Multi Collagen Peptides" className="w-full h-auto object-contain" loading="lazy" />
+      <section className="py-10 px-4 bg-fuchsia-50/50">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-1 text-gray-900">Fórmula 100% Natural</h2>
+          <p className="text-center text-gray-400 text-xs mb-5 font-medium">Información suplementaria y comparación</p>
+          <div className="rounded-2xl overflow-hidden shadow-lg border border-fuchsia-100 bg-white">
+            <img src="/img5.jpeg" alt="Información del suplemento" className="w-full h-auto object-contain" loading="lazy" />
           </div>
         </div>
       </section>
@@ -403,16 +462,13 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* BEFORE & AFTER CAROUSEL */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-2 text-gray-900">
-            Resultados Reales
-          </h2>
-          <p className="text-center text-gray-500 text-sm mb-6 font-medium">Miles de mujeres ya están viendo la diferencia en semanas</p>
+      <section className="py-10 px-4 bg-white">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-1 text-gray-900">Resultados Reales</h2>
+          <p className="text-center text-gray-400 text-xs mb-5 font-medium">Miles de mujeres ya ven la diferencia en semanas</p>
 
-          {/* Carousel */}
           <div className="relative">
-            <div className="rounded-3xl overflow-hidden shadow-xl border-2 border-fuchsia-100 bg-fuchsia-50">
+            <div className="rounded-2xl overflow-hidden shadow-lg border border-fuchsia-100 bg-fuchsia-50">
               <img
                 src={baImages[currentBASlide].src}
                 alt={`Antes y Después - ${baImages[currentBASlide].label}`}
@@ -420,24 +476,22 @@ export default function App() {
                 loading="lazy"
               />
             </div>
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-4">
-              <button onClick={() => setCurrentBASlide((prev) => (prev - 1 + baImages.length) % baImages.length)} className="w-10 h-10 bg-fuchsia-100 rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-200 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
+            <div className="flex items-center justify-between mt-3">
+              <button onClick={() => setCurrentBASlide((p) => (p - 1 + baImages.length) % baImages.length)} className="w-9 h-9 bg-fuchsia-100 rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-200 transition-colors active:scale-90">
+                <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {baImages.map((_, idx) => (
-                  <button key={idx} onClick={() => setCurrentBASlide(idx)} className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentBASlide ? 'bg-fuchsia-600 w-6' : 'bg-fuchsia-200'}`} />
+                  <button key={idx} onClick={() => setCurrentBASlide(idx)} className={`h-2 rounded-full transition-all duration-300 ${idx === currentBASlide ? 'bg-fuchsia-600 w-5' : 'bg-fuchsia-200 w-2'}`} />
                 ))}
               </div>
-              <button onClick={() => setCurrentBASlide((prev) => (prev + 1) % baImages.length)} className="w-10 h-10 bg-fuchsia-100 rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-200 transition-colors">
-                <ChevronRight className="w-5 h-5" />
+              <button onClick={() => setCurrentBASlide((p) => (p + 1) % baImages.length)} className="w-9 h-9 bg-fuchsia-100 rounded-full flex items-center justify-center text-fuchsia-700 hover:bg-fuchsia-200 transition-colors active:scale-90">
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-
-          <p className="text-center text-[10px] text-gray-400 mt-4 max-w-md mx-auto leading-relaxed">
-            * Resultados ilustrativos. Pueden variar según la persona. Este producto es un suplemento alimenticio, no un medicamento.
+          <p className="text-center text-[9px] text-gray-400 mt-3 max-w-sm mx-auto leading-relaxed">
+            * Resultados ilustrativos. Pueden variar. Suplemento alimenticio, no es medicamento.
           </p>
         </div>
       </section>
@@ -445,171 +499,215 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* TESTIMONIALS (Full Image) */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="py-12 px-4 bg-fuchsia-50">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-2 text-gray-900">
-            Lo Que Dicen Nuestras Clientas
-          </h2>
-          <p className="text-center text-gray-500 text-sm mb-6 font-medium">Compras verificadas con testimonios reales</p>
-          <div className="rounded-3xl overflow-hidden shadow-xl border-2 border-fuchsia-100 bg-white">
-            <img src="/img6.jpeg" alt="Testimonios de clientas y envío seguro a todo el Perú" className="w-full h-auto object-contain" loading="lazy" />
+      <section className="py-10 px-4 bg-fuchsia-50/50">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-1 text-gray-900">Lo Que Dicen Nuestras Clientas</h2>
+          <p className="text-center text-gray-400 text-xs mb-5 font-medium">Compras verificadas con testimonios reales</p>
+          <div className="rounded-2xl overflow-hidden shadow-lg border border-fuchsia-100 bg-white">
+            <img src="/img6.jpeg" alt="Testimonios de clientas" className="w-full h-auto object-contain" loading="lazy" />
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* GUARANTEE BANNER */}
+      {/* GUARANTEE */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="py-8 px-4">
-        <div className="max-w-2xl mx-auto bg-gradient-to-br from-fuchsia-900 to-fuchsia-800 rounded-3xl p-6 flex flex-col items-center text-center gap-4 shadow-2xl text-white relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 opacity-5 pointer-events-none">
-            <Award className="w-48 h-48" />
-          </div>
-          <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-fuchsia-900 shadow-lg z-10">
-            <Award className="w-8 h-8" />
+        <div className="max-w-lg mx-auto bg-gradient-to-br from-fuchsia-900 to-fuchsia-800 rounded-2xl p-5 flex items-start gap-4 shadow-xl text-white relative overflow-hidden">
+          <div className="absolute -right-8 -top-8 opacity-5"><Award className="w-36 h-36" /></div>
+          <div className="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center text-fuchsia-900 shadow-lg flex-shrink-0 z-10">
+            <Award className="w-7 h-7" />
           </div>
           <div className="z-10">
-            <div className="inline-block bg-yellow-400 text-fuchsia-900 font-black px-4 py-1 rounded-full text-xs mb-3 uppercase tracking-wider">
-              Satisfacción Garantizada
-            </div>
-            <h3 className="text-2xl font-black text-yellow-400 mb-2">Garantía de 30 Días</h3>
-            <p className="text-fuchsia-100 text-sm leading-relaxed">
-              Si no notas la diferencia en tu piel, cabello y uñas, te devolvemos el <strong className="text-white">100% de tu dinero</strong> sin hacer preguntas. <strong className="text-yellow-400">¡Compra hoy sin riesgo!</strong>
+            <span className="text-[9px] font-black text-fuchsia-300 uppercase tracking-widest">Satisfacción Garantizada</span>
+            <h3 className="text-lg font-black text-yellow-400 mb-1">Garantía de 30 Días</h3>
+            <p className="text-fuchsia-100 text-xs leading-relaxed">
+              Si no notas la diferencia, te devolvemos el <strong className="text-white">100% de tu dinero</strong>. <strong className="text-yellow-400">¡Cero riesgo!</strong>
             </p>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* ORDER FORM */}
+      {/* ORDER FORM — PREMIUM REDESIGN */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section ref={formRef} className="py-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gray-900 -z-20"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-900/30 via-gray-900/95 to-black/95 -z-10"></div>
+      <section ref={formRef} id="formulario" className="py-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-[#0c0118] to-gray-900 -z-20"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-fuchsia-900/20 via-transparent to-transparent -z-10"></div>
 
         <div className="max-w-lg mx-auto px-4 relative z-10">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-white mb-3 tracking-tight">
-              Completa tus datos para coordinar tu entrega
+          {/* Form Header */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fuchsia-500/20 border border-fuchsia-400/20 text-fuchsia-300 text-[10px] font-bold mb-3 uppercase tracking-widest">
+              <Package className="w-3 h-3" /> Paso final
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight leading-tight">
+              ¡Confirma tu pedido<br/>y recíbelo en casa! 🏠
             </h2>
-            <p className="text-fuchsia-300 text-sm font-bold">
-              Paga en casa al recibir tu producto. ¡Sin riesgos!
+            <p className="text-fuchsia-300/80 text-xs font-medium">
+              Paga al recibir · Sin riesgos · Envío gratis
             </p>
-            <div className="flex justify-center mt-4">
-              <img src="/multicollagen3.webp" alt="Multi Collagen Peptides" className="h-32 object-contain drop-shadow-2xl" loading="lazy" />
+          </div>
+
+          {/* Product Card inside form */}
+          <div className="bg-gradient-to-r from-fuchsia-900/80 to-purple-900/80 backdrop-blur-xl rounded-2xl p-4 mb-5 border border-fuchsia-500/20 shadow-xl">
+            <div className="flex items-center gap-4">
+              <img src="/multicollagen3.webp" alt="Multi Collagen Peptides" className="w-20 h-20 object-contain rounded-xl bg-white/10 p-1 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[10px] font-bold text-fuchsia-300 uppercase tracking-widest mb-0.5">Promo exclusiva</p>
+                <h3 className="text-base font-black text-white leading-tight mb-1">2x Multi Collagen Peptides</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-fuchsia-300/60 line-through font-bold">S/ 218</span>
+                  <span className="text-2xl font-black text-yellow-400">S/ 109</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 text-center border border-white/10">
+                <Truck className="w-3.5 h-3.5 text-green-400 mx-auto mb-0.5" />
+                <p className="text-[8px] font-bold text-white/80">Envío Gratis</p>
+              </div>
+              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 text-center border border-white/10">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-400 mx-auto mb-0.5" />
+                <p className="text-[8px] font-bold text-white/80">Pago Seguro</p>
+              </div>
+              <div className="flex-1 bg-white/5 rounded-lg px-2 py-1.5 text-center border border-white/10">
+                <Award className="w-3.5 h-3.5 text-yellow-400 mx-auto mb-0.5" />
+                <p className="text-[8px] font-bold text-white/80">Garantía 30d</p>
+              </div>
             </div>
           </div>
 
-          <form className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-5" onSubmit={handleSubmit}>
+          {/* Form Card */}
+          <form className="bg-white rounded-[1.5rem] shadow-2xl overflow-hidden" onSubmit={handleSubmit}>
             {/* Stock Indicator */}
-            <div className="bg-fuchsia-50 border border-fuchsia-100 rounded-2xl p-4 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-fuchsia-900 font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                  Estado del Inventario
+            <div className="bg-gradient-to-r from-fuchsia-50 to-pink-50 p-4 border-b border-fuchsia-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-fuchsia-900 font-black text-[9px] uppercase tracking-widest flex items-center gap-1">
+                  <Flame className="w-3 h-3 text-red-500 animate-pulse" />
+                  Inventario en tiempo real
                 </span>
-                <span className="text-red-600 font-black text-[10px] bg-white px-3 py-1 rounded-full shadow-sm border border-red-100">
-                  SOLO {stock} UNIDADES
+                <span className="text-red-600 font-black text-[9px] bg-white px-2.5 py-0.5 rounded-full shadow-sm border border-red-100">
+                  {stock} UNIDADES
                 </span>
               </div>
-              <div className="h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 transition-all duration-1000" style={{ width: `${(stock / 15) * 100}%` }}>
-                  <div className="w-full h-full bg-[linear-gradient(45deg,rgba(255,255,255,.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.2)_50%,rgba(255,255,255,.2)_75%,transparent_75%,transparent)] bg-[length:12px_12px] animate-[slide_1s_linear_infinite]"></div>
+              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-400 transition-all duration-1000 relative" style={{ width: `${(stock / 15) * 100}%` }}>
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,.25)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.25)_50%,rgba(255,255,255,.25)_75%,transparent_75%,transparent)] bg-[length:10px_10px] animate-[slide_1s_linear_infinite]"></div>
                 </div>
               </div>
-              <p className="text-[9px] text-fuchsia-700 mt-2 font-medium italic text-right flex items-center justify-end gap-1">
-                <span className="w-1 h-1 bg-red-500 rounded-full animate-ping"></span>
-                Alta demanda detectada
-              </p>
-            </div>
-
-            {/* Promo display */}
-            <div className="bg-fuchsia-50 p-4 rounded-2xl border-2 border-dashed border-fuchsia-200 text-center">
-              <p className="text-fuchsia-800 font-black text-sm mb-1">OFERTA EXCLUSIVA HOY</p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-lg text-gray-400 line-through font-bold">S/ 218.00</span>
-                <span className="text-3xl font-black text-fuchsia-600">S/ 109.00</span>
-              </div>
-              <p className="text-xs font-bold text-green-600 mt-1 bg-green-50 py-1 rounded-full">¡LLEVAS 2 UNIDADES!</p>
             </div>
 
             {/* Form Fields */}
-            <div className="space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
+              {/* Name */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Nombres Completos</label>
-                <input type="text" name="nombre" value={formData.nombre} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('nombre')} placeholder="Ej. María Pérez" required />
-                {touched.nombre && formErrors.nombre && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.nombre}</p>}
+                <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">👤 Nombres Completos</label>
+                <input type="text" name="nombre" value={formData.nombre} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('nombre')} placeholder="Ej. María Pérez López" required />
+                {touched.nombre && formErrors.nombre && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.nombre}</p>}
               </div>
 
+              {/* Phone */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Teléfono (WhatsApp)</label>
-                <input type="tel" name="telefono" value={formData.telefono} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('telefono')} placeholder="Ej. 999888777" required />
-                {touched.telefono && formErrors.telefono && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.telefono}</p>}
+                <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">📱 Teléfono (WhatsApp)</label>
+                <input type="tel" name="telefono" value={formData.telefono} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('telefono')} placeholder="Ej. 999 888 777" required />
+                {touched.telefono && formErrors.telefono && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.telefono}</p>}
               </div>
 
+              {/* City + District */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Ciudad</label>
-                  <input type="text" name="ciudad" value={formData.ciudad} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('ciudad')} placeholder="Ej. Lima" required />
-                  {touched.ciudad && formErrors.ciudad && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.ciudad}</p>}
+                  <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">🏙️ Ciudad</label>
+                  <input type="text" name="ciudad" value={formData.ciudad} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('ciudad')} placeholder="Lima" required />
+                  {touched.ciudad && formErrors.ciudad && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.ciudad}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Distrito</label>
-                  <input type="text" name="distrito" value={formData.distrito} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('distrito')} placeholder="Ej. Miraflores" required />
-                  {touched.distrito && formErrors.distrito && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.distrito}</p>}
+                  <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">📍 Distrito</label>
+                  <input type="text" name="distrito" value={formData.distrito} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('distrito')} placeholder="Miraflores" required />
+                  {touched.distrito && formErrors.distrito && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.distrito}</p>}
                 </div>
               </div>
 
+              {/* Address */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Dirección exacta</label>
+                <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">🏠 Dirección exacta</label>
                 <input type="text" name="direccion" value={formData.direccion} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('direccion')} placeholder="Av. / Calle / Nro / Dpto" required />
-                {touched.direccion && formErrors.direccion && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.direccion}</p>}
+                {touched.direccion && formErrors.direccion && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.direccion}</p>}
               </div>
 
+              {/* Reference */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">Referencia</label>
-                <input type="text" name="referencia" value={formData.referencia} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('referencia')} placeholder="Ej. Frente al parque, casa verde..." required />
-                {touched.referencia && formErrors.referencia && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.referencia}</p>}
+                <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">🗺️ Referencia</label>
+                <input type="text" name="referencia" value={formData.referencia} onChange={handleInputChange} onBlur={handleBlur} className={inputClass('referencia')} placeholder="Frente al parque, casa verde..." required />
+                {touched.referencia && formErrors.referencia && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.referencia}</p>}
               </div>
 
+              {/* Delivery Time */}
               <div>
-                <label className="block text-xs font-black text-gray-700 mb-1.5 uppercase tracking-wider">¿A qué hora prefieres recibirlo?</label>
+                <label className="block text-[10px] font-black text-gray-600 mb-1 uppercase tracking-widest">⏰ Horario de entrega</label>
                 <div className="relative">
-                  <select name="horaEntrega" value={formData.horaEntrega} onChange={handleInputChange} onBlur={handleBlur} className={`${inputClass('horaEntrega')} appearance-none`} required>
+                  <select name="horaEntrega" value={formData.horaEntrega} onChange={handleInputChange} onBlur={handleBlur} className={`${inputClass('horaEntrega')} appearance-none pr-10`} required>
                     <option value="" disabled>Selecciona un horario</option>
-                    <option value="Mañana (8:00 AM - 1:00 PM)">Mañana (8:00 AM - 1:00 PM)</option>
-                    <option value="Tarde (1:00 PM - 6:00 PM)">Tarde (1:00 PM - 6:00 PM)</option>
-                    <option value="Noche (6:00 PM - 9:00 PM)">Noche (6:00 PM - 9:00 PM)</option>
-                    <option value="Cualquier hora del día">Cualquier hora del día</option>
+                    <option value="Mañana (8am - 1pm)">🌅 Mañana (8am - 1pm)</option>
+                    <option value="Tarde (1pm - 6pm)">☀️ Tarde (1pm - 6pm)</option>
+                    <option value="Noche (6pm - 9pm)">🌙 Noche (6pm - 9pm)</option>
+                    <option value="Cualquier hora">📦 Cualquier hora del día</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
-                {touched.horaEntrega && formErrors.horaEntrega && <p className="text-red-500 text-[10px] mt-1 font-bold flex items-center gap-1"><Ban className="w-3 h-3" /> {formErrors.horaEntrega}</p>}
+                {touched.horaEntrega && formErrors.horaEntrega && <p className="text-red-500 text-[9px] mt-1 font-bold flex items-center gap-1"><Ban className="w-2.5 h-2.5" />{formErrors.horaEntrega}</p>}
+              </div>
+
+              {/* GPS Location Status */}
+              <div className={`rounded-xl p-3 flex items-center gap-3 border text-xs ${
+                geoStatus === 'granted' ? 'bg-green-50 border-green-100 text-green-700' :
+                geoStatus === 'loading' ? 'bg-yellow-50 border-yellow-100 text-yellow-700' :
+                geoStatus === 'denied' ? 'bg-orange-50 border-orange-100 text-orange-700' :
+                'bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700'
+              }`}>
+                <MapPin className="w-4 h-4 flex-shrink-0" />
+                <div className="flex-1">
+                  {geoStatus === 'granted' && userCoords ? (
+                    <span className="font-bold text-[10px]">📍 Ubicación detectada: {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}</span>
+                  ) : geoStatus === 'loading' ? (
+                    <span className="font-bold text-[10px]">Obteniendo tu ubicación...</span>
+                  ) : geoStatus === 'denied' ? (
+                    <button type="button" onClick={requestLocation} className="font-bold text-[10px] underline">
+                      Toca aquí para compartir tu ubicación (ayuda al repartidor)
+                    </button>
+                  ) : (
+                    <span className="font-bold text-[10px]">Tu ubicación se solicitará automáticamente</span>
+                  )}
+                </div>
               </div>
 
               {/* Location note */}
-              <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-4 flex items-start gap-3">
-                <div className="w-10 h-10 bg-fuchsia-100 rounded-full flex items-center justify-center text-fuchsia-600 shrink-0">
-                  <MapPin className="w-5 h-5" />
+              <div className="rounded-xl border border-fuchsia-100 bg-fuchsia-50/30 p-3 flex items-start gap-2.5">
+                <div className="w-8 h-8 bg-fuchsia-100 rounded-lg flex items-center justify-center text-fuchsia-600 shrink-0">
+                  <Clock className="w-4 h-4" />
                 </div>
-                <div>
-                  <h4 className="text-[11px] font-black text-fuchsia-900 mb-0.5">Paso final de confirmación</h4>
-                  <p className="text-[10px] text-fuchsia-800 leading-relaxed">
-                    Un asesor se comunicará contigo y te pedirá tu <strong>ubicación exacta en el mapa</strong> para asegurar que el pedido llegue sin problemas.
-                  </p>
-                </div>
+                <p className="text-[10px] text-fuchsia-800/80 leading-relaxed font-medium">
+                  Un asesor confirmará tu pedido y te enviará la <strong>guía del transportista</strong> al instante por WhatsApp.
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-4.5 px-8 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] hover:shadow-[0_0_60px_rgba(37,211,102,0.5)] transition-all flex items-center justify-center gap-2.5 text-base uppercase tracking-wide hover:scale-[1.02] active:scale-95">
+                <MessageCircle className="w-5 h-5" />
+                CONFIRMAR MI COMPRA
+              </button>
+
+              <div className="flex items-center justify-center gap-4 pt-1">
+                <p className="text-center text-[9px] text-gray-400 flex items-center gap-1 font-medium">
+                  <Lock className="w-3 h-3" /> Datos seguros
+                </p>
+                <p className="text-center text-[9px] text-gray-400 flex items-center gap-1 font-medium">
+                  <ShieldCheck className="w-3 h-3" /> SSL certificado
+                </p>
               </div>
             </div>
-
-            <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-5 px-8 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] hover:shadow-[0_0_60px_rgba(37,211,102,0.5)] transition-all flex items-center justify-center gap-3 text-lg mt-6 uppercase tracking-wide hover:scale-[1.02] active:scale-95">
-              <MessageCircle className="w-6 h-6" />
-              CONFIRMAR MI COMPRA
-            </button>
-            <p className="text-center text-[10px] text-gray-400 mt-3 flex items-center justify-center gap-1.5 font-medium">
-              <ShieldCheck className="w-4 h-4" /> Tus datos están seguros y encriptados
-            </p>
           </form>
         </div>
       </section>
@@ -617,10 +715,10 @@ export default function App() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/* FAQ SECTION */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="bg-fuchsia-50 py-12 px-4 border-t border-fuchsia-100">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-8 text-gray-900">Preguntas Frecuentes</h2>
-          <div className="space-y-3">
+      <section className="bg-white py-10 px-4 border-t border-gray-100">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-6 text-gray-900">Preguntas Frecuentes</h2>
+          <div className="space-y-2.5">
             {[
               { q: "¿Cómo debo tomar el colágeno?", a: "Mezcla 1-2 cucharadas al día con tu bebida favorita (agua, jugo, café, batidos). Se disuelve fácilmente y no tiene sabor." },
               { q: "¿Cuánto tarda en llegar mi pedido?", a: "Enviamos a nivel nacional por Shalom y Olva. Lima: 1-2 días hábiles. Provincias: 3-5 días hábiles." },
@@ -629,12 +727,12 @@ export default function App() {
               { q: "¿La promo 2x1 es real?", a: "¡100% real! Solo por hoy llevas 2 potes de Multi Collagen Peptides por S/ 109.00 con envío gratis incluido." },
               { q: "¿Cómo es el pago?", a: "Pagas contra entrega: en efectivo o por transferencia cuando recibas tu pedido en la puerta de tu casa. ¡Cero riesgo!" },
             ].map((faq, idx) => (
-              <details key={idx} className="bg-white rounded-2xl border border-fuchsia-100 shadow-sm group">
-                <summary className="flex items-center justify-between p-4 cursor-pointer font-bold text-sm text-gray-900 list-none">
-                  {faq.q}
-                  <span className="text-fuchsia-500 group-open:rotate-45 transition-transform text-xl font-bold ml-2">+</span>
+              <details key={idx} className="bg-gray-50 rounded-xl border border-gray-100 group">
+                <summary className="flex items-center justify-between p-3.5 cursor-pointer font-bold text-xs text-gray-900 list-none">
+                  <span className="pr-4">{faq.q}</span>
+                  <span className="text-fuchsia-500 group-open:rotate-45 transition-transform text-lg font-bold flex-shrink-0">+</span>
                 </summary>
-                <div className="px-4 pb-4 pt-0 text-sm text-gray-600 leading-relaxed border-t border-fuchsia-50">
+                <div className="px-3.5 pb-3.5 pt-0 text-xs text-gray-600 leading-relaxed border-t border-gray-100">
                   {faq.a}
                 </div>
               </details>
@@ -647,12 +745,12 @@ export default function App() {
       {/* FOOTER */}
       {/* ═══════════════════════════════════════════════════════ */}
       <footer className="bg-gray-900 text-gray-400 py-8 px-4 text-center pb-24 md:pb-8">
-        <div className="max-w-2xl mx-auto">
-          <p className="text-xs font-bold text-white mb-2">Multi Collagen Peptides</p>
-          <p className="text-[10px] leading-relaxed mb-4">
-            Este producto es un suplemento alimenticio y no pretende diagnosticar, tratar, curar ni prevenir ninguna enfermedad. Consulta con tu médico antes de comenzar cualquier suplemento.
+        <div className="max-w-lg mx-auto">
+          <p className="text-[10px] font-bold text-white mb-1">Multi Collagen Peptides</p>
+          <p className="text-[9px] leading-relaxed mb-3">
+            Este producto es un suplemento alimenticio y no pretende diagnosticar, tratar, curar ni prevenir ninguna enfermedad.
           </p>
-          <p className="text-[10px]">© {new Date().getFullYear()} Savia Corporación. Todos los derechos reservados.</p>
+          <p className="text-[9px]">© {new Date().getFullYear()} Savia Corporación. Todos los derechos reservados.</p>
         </div>
       </footer>
 
@@ -660,28 +758,62 @@ export default function App() {
       {/* CONFIRMATION MODAL */}
       {/* ═══════════════════════════════════════════════════════ */}
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 relative shadow-2xl animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setIsConfirmModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors">
-              <X className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/70 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
+          <div className="bg-white w-full sm:rounded-3xl sm:max-w-md sm:w-full rounded-t-3xl relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setIsConfirmModalOpen(false)} className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-800 transition-colors">
+              <X className="w-4 h-4" />
             </button>
-            <h3 className="text-xl font-black text-gray-900 mb-2">Confirmar Pedido</h3>
-            <p className="text-gray-500 mb-4 text-sm">Revisa tus datos antes de enviarlo por WhatsApp.</p>
 
-            <div className="bg-gray-50 p-4 rounded-2xl mb-6 text-sm text-gray-700 space-y-2 border border-gray-100">
-              <div><span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Promo</span><br/><span className="font-bold">2x1 Multi Collagen Peptides - S/ 109.00</span></div>
-              <div><span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Nombre</span><br/><span className="font-medium">{formData.nombre}</span></div>
-              <div><span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Teléfono</span><br/><span className="font-medium">{formData.telefono}</span></div>
-              <div><span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Dirección</span><br/><span className="font-medium">{formData.direccion}, {formData.distrito}, {formData.ciudad}</span></div>
-              <div><span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Horario</span><br/><span className="font-medium">{formData.horaEntrega}</span></div>
+            {/* Product Mini */}
+            <div className="p-5 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <img src="/multicollagen3.webp" alt="Producto" className="w-14 h-14 object-contain rounded-xl bg-fuchsia-50 p-1" />
+                <div>
+                  <p className="text-sm font-black text-gray-900">2x Multi Collagen Peptides</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 line-through">S/ 218</span>
+                    <span className="text-lg font-black text-fuchsia-600">S/ 109.00</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setIsConfirmModalOpen(false)} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
+            {/* Order Details */}
+            <div className="p-5 space-y-2.5">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Datos de envío</h3>
+              {[
+                { icon: "👤", label: "Nombre", value: formData.nombre },
+                { icon: "📱", label: "Teléfono", value: formData.telefono },
+                { icon: "📍", label: "Ubicación", value: `${formData.distrito}, ${formData.ciudad}` },
+                { icon: "🏠", label: "Dirección", value: formData.direccion },
+                { icon: "⏰", label: "Horario", value: formData.horaEntrega },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-start gap-2 text-sm">
+                  <span className="text-xs">{item.icon}</span>
+                  <div>
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{item.label}</span>
+                    <p className="text-gray-900 font-semibold text-xs">{item.value}</p>
+                  </div>
+                </div>
+              ))}
+              {userCoords && (
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="text-xs">📌</span>
+                  <div>
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Coordenadas GPS</span>
+                    <p className="text-gray-900 font-semibold text-xs">{userCoords.lat.toFixed(6)}, {userCoords.lng.toFixed(6)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="p-5 pt-0 flex gap-2.5">
+              <button onClick={() => setIsConfirmModalOpen(false)} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors active:scale-95">
                 Editar
               </button>
-              <button onClick={confirmOrder} className="flex-1 py-3 rounded-xl bg-[#25D366] text-white font-black text-sm shadow-lg hover:bg-[#20bd5a] transition-all flex items-center justify-center gap-2">
-                <MessageCircle className="w-4 h-4" />
+              <button onClick={confirmOrder} className="flex-1 py-3 rounded-xl bg-[#25D366] text-white font-black text-xs shadow-lg hover:bg-[#20bd5a] transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                <MessageCircle className="w-3.5 h-3.5" />
                 Enviar Pedido
               </button>
             </div>

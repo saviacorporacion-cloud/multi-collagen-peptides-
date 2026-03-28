@@ -5,7 +5,6 @@
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Smooth scrolling for the whole page */
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
@@ -18,7 +17,37 @@ html {
   to { background-position: 40px 0; }
 }
 
-/* Float animation for product images */
+/* Scroll dot animation */
+@keyframes scrollDot {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(16px); opacity: 0.2; }
+}
+
+.animate-scroll-dot {
+  animation: scrollDot 2s ease-in-out infinite;
+}
+
+/* Slow bounce for chevron */
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(6px); opacity: 0.8; }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2.5s ease-in-out infinite;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Float animation */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
@@ -28,22 +57,21 @@ html {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Hide scrollbar on horizontal scroll */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Better focus outlines for mobile */
+/* Better focus */
 *:focus-visible {
   outline: 2px solid #d946ef;
   outline-offset: 2px;
 }
 
-/* Prevent blue flash on iOS tap */
 button, a, input, select, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Details/Summary FAQ cursor */
 details summary::-webkit-details-marker {
   display: none;
+}
+
+/* Smooth transitions for images in carousel */
+img {
+  transition: opacity 0.3s ease;
 }
