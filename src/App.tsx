@@ -278,7 +278,7 @@ export default function App() {
             transition={{ delay: 0.3 }}
             className="hidden md:flex mx-auto bg-yellow-400 hover:bg-yellow-300 text-black font-display font-bold text-3xl tracking-wide py-4 px-12 rounded-full shadow-[0_0_30px_rgba(250,204,21,0.4)] transition-all transform hover:scale-105 items-center gap-3"
           >
-            ¡COMPRAR AHORA! <ArrowRight size={28} />
+            ¡QUIERO MI PROMO 2x1! <ArrowRight size={28} />
           </motion.button>
 
           <motion.div
@@ -453,6 +453,9 @@ export default function App() {
               </motion.div>
             ))}
           </motion.div>
+          <p className="text-center text-xs text-gray-400 mt-8 max-w-3xl mx-auto">
+            * Descargo de responsabilidad: Los resultados mostrados son ilustrativos y pueden variar de persona a persona dependiendo del metabolismo, dieta y constancia de uso. Este producto es un suplemento alimenticio, no un medicamento.
+          </p>
         </div>
       </section>
 
@@ -682,8 +685,9 @@ export default function App() {
                 </select>
               </div>
 
-              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-display font-bold text-xl sm:text-2xl tracking-wide py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 mt-6">
-                ¡QUIERO MI PROMO 2X1 AHORA! <ArrowRight size={24} />
+              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-display font-bold text-xl sm:text-2xl tracking-wide py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 mt-6">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" /><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" /></svg>
+                ¡PEDIR POR WHATSAPP AHORA!
               </button>
               
               <div className="flex flex-col items-center gap-3 mt-4">
@@ -786,6 +790,7 @@ export default function App() {
             <a href="#" className="hover:text-white transition-colors">Términos y Condiciones</a>
             <a href="#" className="hover:text-white transition-colors">Política de Privacidad</a>
             <a href="#" className="hover:text-white transition-colors">Política de Reembolso</a>
+            <a href="#" className="hover:text-white transition-colors">Aviso Legal</a>
             <a href="#" className="hover:text-white transition-colors">Contacto</a>
           </div>
           
