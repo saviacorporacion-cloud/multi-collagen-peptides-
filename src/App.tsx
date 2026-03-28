@@ -142,22 +142,6 @@ export default function App() {
     );
   };
 
-  // Auto-request location when form comes into view
-  useEffect(() => {
-    const formEl = formRef.current;
-    if (!formEl) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && geoStatus === 'idle') {
-          requestLocation();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(formEl);
-    return () => observer.disconnect();
-  }, [geoStatus]);
-
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -675,20 +659,22 @@ export default function App() {
                 geoStatus === 'granted' ? 'bg-green-50 border-green-100 text-green-700' :
                 geoStatus === 'loading' ? 'bg-yellow-50 border-yellow-100 text-yellow-700' :
                 geoStatus === 'denied' ? 'bg-orange-50 border-orange-100 text-orange-700' :
-                'bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700'
+                'bg-white border-fuchsia-200 text-fuchsia-800'
               }`}>
-                <MapPin className="w-4 h-4 flex-shrink-0" />
-                <div className="flex-1">
+                {geoStatus !== 'idle' && <MapPin className="w-4 h-4 flex-shrink-0" />}
+                <div className="flex-1 w-full">
                   {geoStatus === 'granted' && userCoords ? (
                     <span className="font-bold text-[10px]">📍 Ubicación detectada: {userCoords.lat.toFixed(4)}, {userCoords.lng.toFixed(4)}</span>
                   ) : geoStatus === 'loading' ? (
                     <span className="font-bold text-[10px]">Obteniendo tu ubicación...</span>
                   ) : geoStatus === 'denied' ? (
-                    <button type="button" onClick={requestLocation} className="font-bold text-[10px] underline">
-                      Toca aquí para compartir tu ubicación (ayuda al repartidor)
+                    <button type="button" onClick={requestLocation} className="font-bold text-[10px] text-orange-700 underline text-left">
+                      ⚠️ Permiso denegado. Toca aquí para reintentar.
                     </button>
                   ) : (
-                    <span className="font-bold text-[10px]">Tu ubicación se solicitará automáticamente</span>
+                    <button type="button" onClick={requestLocation} className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-black py-3 px-3 rounded-lg shadow-md transition-all active:scale-95 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 animate-bounce">
+                      <MapPin className="w-4 h-4"/> TOCA AQUÍ PARA COMPARTIR TU UBICACIÓN
+                    </button>
                   )}
                 </div>
               </div>
