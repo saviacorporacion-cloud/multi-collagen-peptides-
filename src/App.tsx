@@ -70,7 +70,10 @@ export default function App() {
 
   const [currentReview, setCurrentReview] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(23 * 60); // 23 minutes in seconds
+  const [stock, setStock] = useState(13); // Start with 13 units
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -101,18 +104,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const stockTimer = setInterval(() => {
+      setStock((prev) => (prev > 3 ? prev - 1 : 3));
+    }, 45000); // Decrease stock every 45s
+    return () => clearInterval(stockTimer);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (videoRef.current) {
+              videoRef.current.playbackRate = 0.65;
+              videoRef.current.play()
+                .then(() => setIsVideoPlaying(true))
+                .catch((e) => {
+                  console.log("Autoplay prevented:", e);
+                  setShowPlayOverlay(true);
+                });
+            }
+          } else {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              setIsVideoPlaying(false);
+            }
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
     if (videoRef.current) {
-      videoRef.current.playbackRate = 0.65; // Slows down the video playback
-      
-      // Retrasar el inicio del video para que la imagen (poster) se vea por 1 segundo
-      const playTimer = setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.play().catch(e => console.log("Autoplay prevented", e));
-        }
-      }, 1000);
-      
-      return () => clearTimeout(playTimer);
+      observer.observe(videoRef.current);
     }
+
+    return () => observer.disconnect();
   }, []);
 
   const scrollToForm = () => {
@@ -152,9 +179,42 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-fuchsia-200">
-      {/* Announcement Bar */}
-      <div className="bg-yellow-400 text-black text-center py-2 px-4 font-display font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 animate-pulse">
-        🔥 ¡OFERTA 2X1 SOLO POR HOY + ENVÍO GRATIS! 🔥
+      {/* Dynamic Sticky Countdown Bar */}
+      <div className="sticky top-0 z-[100] w-full bg-[#111] text-white overflow-hidden shadow-xl border-b border-fuchsia-900/50">
+        <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-900/20 via-transparent to-fuchsia-900/20" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-4 relative text-[11px] sm:text-xs md:text-sm font-medium tracking-wide">
+          <div className="flex items-center gap-2 sm:gap-3 text-fuchsia-200">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-fuchsia-400 animate-pulse" />
+            <span className="font-semibold tracking-wider text-white">ENVÍO GRATIS A TODO EL PERÚ</span>
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-fuchsia-400 animate-pulse hidden sm:inline" />
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-white/20" />
+          <div className="flex items-center gap-2 sm:gap-3 font-semibold pb-0.5 sm:pb-0">
+            <span className="text-white">LA OFERTA EXPIRA EN:</span>
+            <div className="bg-black/40 border border-fuchsia-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-md text-yellow-400 font-mono text-sm sm:text-base md:text-lg shadow-[0_0_10px_rgba(250,204,21,0.15)] flex items-center gap-1.5">
+              <span className="animate-pulse">⏳</span>
+              {formatTime(timeLeft)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Stock Badge */}
+      <div className="fixed bottom-24 sm:bottom-6 left-4 z-50 animate-bounce-slow">
+        <div className="bg-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-fuchsia-100 flex items-center gap-3 backdrop-blur-xl bg-white/90">
+          <div className="bg-red-50 p-2 sm:p-2.5 rounded-xl border border-red-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500 animate-pulse sm:w-6 sm:h-6"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-red-600 tracking-wider">¡ALTA DEMANDA!</span>
+            </div>
+            <div className="text-xs sm:text-sm font-medium text-gray-700">
+              Solo quedan <strong className="text-red-600 text-sm sm:text-base opacity-100 transition-opacity duration-300">{stock}</strong> unidades
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Sticky CTA for Mobile */}
@@ -221,10 +281,28 @@ export default function App() {
               loop 
               muted 
               playsInline
-              preload="auto"
+              preload="metadata"
               className="w-full h-auto object-cover bg-fuchsia-200 min-h-[300px] transform group-hover:scale-105 transition-transform duration-700" 
               poster="/multicollagen3.webp"
             />
+            {showPlayOverlay && !isVideoPlaying && (
+              <div 
+                className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer z-10"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = false; // Optional depending on preference, we usually leave muted to avoid blast
+                    videoRef.current.play().then(() => {
+                      setIsVideoPlaying(true);
+                      setShowPlayOverlay(false);
+                    });
+                  }
+                }}
+              >
+                <div className="bg-fuchsia-600 text-white rounded-full p-4 animate-pulse shadow-[0_0_20px_rgba(192,38,211,0.6)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-play ml-1"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                </div>
+              </div>
+            )}
             
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 sm:p-5 text-left border-t border-white/10 backdrop-blur-[2px]">
               <div className="flex items-center gap-3 mb-1.5">
@@ -240,7 +318,7 @@ export default function App() {
                 </div>
               </div>
               <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-white drop-shadow-lg leading-tight">
-                ¡SOLO QUEDAN <span className="text-yellow-400 text-2xl sm:text-3xl">9</span> UNIDADES!
+                ¡SOLO QUEDAN <span className="text-yellow-400 text-2xl sm:text-3xl">{stock}</span> UNIDADES!
               </p>
               <p className="text-gray-300 text-xs mt-1 font-medium">La oferta expira cuando el contador llegue a cero.</p>
             </div>
@@ -500,15 +578,38 @@ export default function App() {
               <p className="text-sm font-bold text-green-600 mb-4 bg-green-50 py-1 rounded-full">¡LLEVAS 2 UNIDADES!</p>
               
               {/* Scarcity Bar */}
-              <div className="w-full text-left mt-4">
-                <div className="flex justify-between text-xs font-bold text-red-600 mb-1">
-                  <span>🔥 Alta demanda</span>
-                  <span>87% Vendido</span>
+              <div className="relative mt-8 p-6 bg-gradient-to-br from-orange-50/50 to-red-50/50 rounded-2xl border border-orange-100/80 shadow-inner">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-orange-200 shadow-sm">
+                  <span className="text-xs font-bold text-gray-700 tracking-wider">ESTADO DEL INVENTARIO</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-red-600 h-2.5 rounded-full" style={{ width: '87%' }}></div>
+                
+                <div className="flex justify-between items-end mb-3 mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  </div>
+                  <div className="bg-red-50 border border-red-100 px-3 py-1 rounded-full">
+                    <span className="text-sm font-bold text-red-600 tracking-wide">SOLO {stock} UNIDADES</span>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">Solo quedan 9 promos disponibles</p>
+
+                <div className="h-3.5 w-full bg-gray-200/80 rounded-full overflow-hidden shadow-inner p-0.5">
+                  <div 
+                    className="h-full rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 transition-all duration-1000 ease-out relative"
+                    style={{ width: `${Math.max(10, (stock / 15) * 100)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[stripes_1s_linear_infinite]" />
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center mt-3 text-xs">
+                  <span className="text-orange-600/80 font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                    Actualizado hace unos segundos - Alta demanda detectada
+                  </span>
+                </div>
               </div>
             </div>
           </div>
