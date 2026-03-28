@@ -260,7 +260,7 @@ export default function App() {
       `\n\n💳 *Pago:* Contraentrega 🚚`;
 
     if (window.ttq) {
-      window.ttq.track('CompletePayment', {
+      window.ttq.track('PlaceAnOrder', {
         contents: [{ content_id: 'promo_2x1_collagen', content_name: 'Promo 2x1 Multi Collagen Peptides', quantity: 1, price: 109.00 }],
         value: 109.00, currency: 'PEN',
       });
