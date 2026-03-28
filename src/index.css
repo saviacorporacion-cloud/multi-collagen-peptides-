@@ -1,7 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Oswald:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Oswald", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Smooth scrolling for the whole page */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Striped progress bar animation */
+@keyframes slide {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+/* Float animation for product images */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Hide scrollbar on horizontal scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Better focus outlines for mobile */
+*:focus-visible {
+  outline: 2px solid #d946ef;
+  outline-offset: 2px;
+}
+
+/* Prevent blue flash on iOS tap */
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Details/Summary FAQ cursor */
+details summary::-webkit-details-marker {
+  display: none;
 }
