@@ -124,31 +124,65 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Request geolocation when form section is visible
+  // GPS Request with enhanced accuracy
   const requestLocation = () => {
     if (!navigator.geolocation) {
       setGeoStatus('denied');
       return;
     }
     setGeoStatus('loading');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    
+    // Use watchPosition to get an accurate GPS lock. 
+    // Phones often return a quick, inaccurate cell-tower location first.
+    let watchId: number;
+    let bestPos: GeolocationPosition | null = null;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const finalize = (pos: GeolocationPosition | null) => {
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timeoutId);
+      if (pos) {
         setUserCoords({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
         });
         setGeoStatus('granted');
-      },
-      (error) => {
+      } else {
         setGeoStatus('denied');
-        if (error.code === 1) {
-          alert('📍 El acceso a tu ubicación fue denegado. Por favor, actívalo en la configuración de la página (ícono del candado junto a la URL) para enviarnos tus coordenadas exactas.');
-        } else {
-          alert('📍 Tuvimos un problema capturando tu ubicación. Por favor, asegúrate de tener el GPS encendido e inténtalo de nuevo.');
+        alert('📍 No logramos obtener tu ubicación exacta. Asegúrate de tener el GPS activado en modo "Alta precisión" (o prueba al aire libre si la señal es débil).');
+      }
+    };
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        bestPos = position;
+        // Si la precisión es menor a 40 metros (muy exacta), cortamos la búsqueda.
+        if (position.coords.accuracy <= 40) {
+          finalize(position);
         }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      (error) => {
+        // Si hay error pero ya teníamos una posición previa, usamos esa
+        if (bestPos) {
+          finalize(bestPos);
+        } else {
+          setGeoStatus('denied');
+          clearTimeout(timeoutId);
+          if (error.code === 1) {
+            alert('📍 PERMISO DENEGADO. Por favor, toca el ícono del "candadito" 🔒 junto a la dirección web y habilita "Ubicación" para enviarnos tus coordenadas.');
+          } else {
+            alert('📍 Error buscando GPS. Por favor, asegúrate de tener la ubicación (GPS) activada en tu celular e inténtalo de nuevo.');
+          }
+        }
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
+
+    // Timeout de 8 segundos: Si no conseguimos precisión perfecta en 8s, 
+    // nos conformamos con la mejor que hayamos encontrado hasta ahora.
+    timeoutId = setTimeout(() => {
+      finalize(bestPos);
+    }, 8000);
   };
 
   const scrollToForm = () => {
@@ -205,7 +239,7 @@ export default function App() {
 
     let coordsText = '';
     if (userCoords) {
-      coordsText = `\n📌 *Coordenadas GPS:* ${userCoords.lat.toFixed(6)}, ${userCoords.lng.toFixed(6)}\n🗺️ *Ver en mapa:* https://www.google.com/maps?q=${userCoords.lat},${userCoords.lng}`;
+      coordsText = `\n📌 *Coordenadas GPS:* ${userCoords.lat.toFixed(6)}, ${userCoords.lng.toFixed(6)}\n🗺️ *Ver en mapa:* https://www.google.com/maps/search/?api=1&query=${userCoords.lat},${userCoords.lng}`;
     }
 
     const message = `*¡NUEVO PEDIDO - PROMO 2x1 MULTI COLLAGEN PEPTIDES!* 🛍️✨\n\n` +
