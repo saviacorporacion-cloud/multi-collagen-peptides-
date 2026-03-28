@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Star, CheckCircle2, Truck, ShieldCheck, ArrowRight, Lock, CreditCard, Sparkles, Droplets, Shield, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, CheckCircle2, Truck, ShieldCheck, ArrowRight, Lock, CreditCard, Sparkles, Droplets, Shield, Award, ChevronLeft, ChevronRight, MapPin, ChevronDown } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -20,8 +20,12 @@ export default function App() {
     distrito: '',
     direccion: '',
     referencia: '',
-    horaEntrega: ''
+    horaEntrega: '',
+    coordenadas: ''
   });
+  
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   const reviews = [
     { 
@@ -70,10 +74,7 @@ export default function App() {
 
   const [currentReview, setCurrentReview] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(23 * 60); // 23 minutes in seconds
-  const [stock, setStock] = useState(13); // Start with 13 units
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -104,56 +105,62 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const stockTimer = setInterval(() => {
-      setStock((prev) => (prev > 3 ? prev - 1 : 3));
-    }, 45000); // Decrease stock every 45s
-    return () => clearInterval(stockTimer);
-  }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            if (videoRef.current) {
-              videoRef.current.playbackRate = 0.65;
-              videoRef.current.play()
-                .then(() => setIsVideoPlaying(true))
-                .catch((e) => {
-                  console.log("Autoplay prevented:", e);
-                  setShowPlayOverlay(true);
-                });
-            }
-          } else {
-            if (videoRef.current) {
-              videoRef.current.pause();
-              setIsVideoPlaying(false);
-            }
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
     if (videoRef.current) {
-      observer.observe(videoRef.current);
+      videoRef.current.playbackRate = 0.65; // Slows down the video playback
+      
+      // Retrasar el inicio del video para que la imagen (poster) se vea por 1 segundo
+      const playTimer = setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.play().catch(e => console.log("Autoplay prevented", e));
+        }
+      }, 1000);
+      
+      return () => clearTimeout(playTimer);
     }
-
-    return () => observer.disconnect();
   }, []);
 
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleGetLocation = () => {
+    setIsLocating(true);
+    setLocationError('');
+    
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setFormData(prev => ({ ...prev, coordenadas: `${lat},${lng}` }));
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          if (error.code === error.PERMISSION_DENIED) {
+            setLocationError('Permiso denegado. Por favor, permite el acceso a tu ubicación.');
+          } else {
+            setLocationError('No se pudo obtener la ubicación. Intenta de nuevo.');
+          }
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setLocationError('Tu navegador no soporta geolocalización.');
+      setIsLocating(false);
+    }
+  };
+
   const handleWhatsAppOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    const { nombre, ciudad, distrito, direccion, referencia, horaEntrega } = formData;
+    const { nombre, ciudad, distrito, direccion, referencia, horaEntrega, coordenadas } = formData;
     
     // Número de WhatsApp del vendedor
     const phoneNumber = "51919749480"; 
     
-    const message = `*¡Hola! Quiero confirmar mi pedido de la Promo 2x1 de Multi Collagen Peptides (S/109.00)* 🛍️\n\n*Mis datos de envío son:*\n👤 *Nombre:* ${nombre}\n🏙️ *Ciudad:* ${ciudad}\n📍 *Distrito:* ${distrito}\n🏠 *Dirección:* ${direccion}\n🗺️ *Referencia:* ${referencia || 'Ninguna'}\n⏰ *Hora de entrega:* ${horaEntrega}\n\nPor favor, confírmenme el pedido.`;
+    const locationText = coordenadas ? `\n📍 *Coordenadas GPS:* https://www.google.com/maps?q=${coordenadas}` : '';
+    const message = `*¡Hola! Quiero confirmar mi pedido de la Promo 2x1 de Multi Collagen Peptides (S/109.00)* 🛍️\n\n*Mis datos de envío son:*\n👤 *Nombre:* ${nombre}\n🏙️ *Ciudad:* ${ciudad}\n📍 *Distrito:* ${distrito}\n🏠 *Dirección:* ${direccion}\n🗺️ *Referencia:* ${referencia || 'Ninguna'}\n⏰ *Hora de entrega:* ${horaEntrega}${locationText}\n\nPor favor, confírmenme el pedido.`;
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
@@ -179,42 +186,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-fuchsia-200">
-      {/* Dynamic Sticky Countdown Bar */}
-      <div className="sticky top-0 z-[100] w-full bg-[#111] text-white overflow-hidden shadow-xl border-b border-fuchsia-900/50">
-        <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-900/20 via-transparent to-fuchsia-900/20" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-4 relative text-[11px] sm:text-xs md:text-sm font-medium tracking-wide">
-          <div className="flex items-center gap-2 sm:gap-3 text-fuchsia-200">
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-fuchsia-400 animate-pulse" />
-            <span className="font-semibold tracking-wider text-white">ENVÍO GRATIS A TODO EL PERÚ</span>
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-fuchsia-400 animate-pulse hidden sm:inline" />
-          </div>
-          <div className="hidden sm:block h-4 w-px bg-white/20" />
-          <div className="flex items-center gap-2 sm:gap-3 font-semibold pb-0.5 sm:pb-0">
-            <span className="text-white">LA OFERTA EXPIRA EN:</span>
-            <div className="bg-black/40 border border-fuchsia-500/30 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-md text-yellow-400 font-mono text-sm sm:text-base md:text-lg shadow-[0_0_10px_rgba(250,204,21,0.15)] flex items-center gap-1.5">
-              <span className="animate-pulse">⏳</span>
-              {formatTime(timeLeft)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Stock Badge */}
-      <div className="fixed bottom-24 sm:bottom-6 left-4 z-50 animate-bounce-slow">
-        <div className="bg-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-fuchsia-100 flex items-center gap-3 backdrop-blur-xl bg-white/90">
-          <div className="bg-red-50 p-2 sm:p-2.5 rounded-xl border border-red-100 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500 animate-pulse sm:w-6 sm:h-6"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-red-600 tracking-wider">¡ALTA DEMANDA!</span>
-            </div>
-            <div className="text-xs sm:text-sm font-medium text-gray-700">
-              Solo quedan <strong className="text-red-600 text-sm sm:text-base opacity-100 transition-opacity duration-300">{stock}</strong> unidades
-            </div>
-          </div>
-        </div>
+      {/* Announcement Bar */}
+      <div className="bg-yellow-400 text-black text-center py-2 px-4 font-display font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 animate-pulse">
+        🔥 ¡OFERTA 2X1 POR SEMANA SANTA + ENVÍO GRATIS! 🔥
       </div>
 
       {/* Sticky CTA for Mobile */}
@@ -230,8 +204,14 @@ export default function App() {
       </div>
 
       {/* Header / Hero */}
-      <header className="bg-gradient-to-b from-fuchsia-900 to-fuchsia-800 text-white pt-8 pb-12 px-4 relative overflow-hidden">
+      <header className="relative text-white pt-8 pb-12 px-4 overflow-hidden bg-fuchsia-950">
+        {/* Premium Glowing Aura Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-fuchsia-800 via-fuchsia-950 to-black opacity-90"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-fuchsia-500 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-rose-500 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
         <motion.div style={{ y: heroBgY }} className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></motion.div>
+        
         <div className="max-w-3xl mx-auto relative z-10 text-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -248,25 +228,10 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-7xl font-display font-bold leading-tight mb-4 tracking-tight"
+            className="text-4xl sm:text-5xl md:text-7xl font-display font-bold leading-tight mb-8 tracking-tight"
           >
             PIEL MÁS FIRME, <span className="text-fuchsia-300">CABELLO MÁS FUERTE</span> Y UÑAS SIN QUIEBRE
           </motion.h1>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
-            className="mb-8 flex flex-col items-center justify-center"
-          >
-            <div className="flex items-center gap-4 mb-2">
-              <span className="text-2xl md:text-3xl text-fuchsia-300 line-through font-bold opacity-70">S/ 218.00</span>
-              <span className="text-5xl md:text-6xl text-yellow-400 font-display font-bold drop-shadow-lg">S/ 109.00</span>
-            </div>
-            <div className="bg-fuchsia-600 text-white px-4 py-1.5 rounded-full font-bold text-sm md:text-base tracking-wide border border-fuchsia-400 shadow-lg">
-              ¡LLEVAS 2 POR EL PRECIO DE 1!
-            </div>
-          </motion.div>
 
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -281,28 +246,10 @@ export default function App() {
               loop 
               muted 
               playsInline
-              preload="metadata"
+              preload="auto"
               className="w-full h-auto object-cover bg-fuchsia-200 min-h-[300px] transform group-hover:scale-105 transition-transform duration-700" 
               poster="/multicollagen3.webp"
             />
-            {showPlayOverlay && !isVideoPlaying && (
-              <div 
-                className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer z-10"
-                onClick={() => {
-                  if (videoRef.current) {
-                    videoRef.current.muted = false; // Optional depending on preference, we usually leave muted to avoid blast
-                    videoRef.current.play().then(() => {
-                      setIsVideoPlaying(true);
-                      setShowPlayOverlay(false);
-                    });
-                  }
-                }}
-              >
-                <div className="bg-fuchsia-600 text-white rounded-full p-4 animate-pulse shadow-[0_0_20px_rgba(192,38,211,0.6)]">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-play ml-1"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                </div>
-              </div>
-            )}
             
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 sm:p-5 text-left border-t border-white/10 backdrop-blur-[2px]">
               <div className="flex items-center gap-3 mb-1.5">
@@ -318,7 +265,7 @@ export default function App() {
                 </div>
               </div>
               <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-white drop-shadow-lg leading-tight">
-                ¡SOLO QUEDAN <span className="text-yellow-400 text-2xl sm:text-3xl">{stock}</span> UNIDADES!
+                ¡SOLO QUEDAN <span className="text-yellow-400 text-2xl sm:text-3xl">9</span> UNIDADES!
               </p>
               <p className="text-gray-300 text-xs mt-1 font-medium">La oferta expira cuando el contador llegue a cero.</p>
             </div>
@@ -342,6 +289,41 @@ export default function App() {
           >
             <span className="flex items-center gap-1"><Lock size={16} className="text-green-400" /> Pago 100% Seguro</span>
             <span className="flex items-center gap-1"><ShieldCheck size={16} className="text-blue-400" /> Cifrado SSL 256-bit</span>
+          </motion.div>
+
+          {/* Super Scroll Indicator */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            className="mt-12 flex flex-col items-center justify-center cursor-pointer group"
+            onClick={() => window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' })}
+          >
+            <span className="text-fuchsia-200 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase mb-4 opacity-70 group-hover:opacity-100 transition-opacity">
+              Desliza para descubrir
+            </span>
+            <div className="w-8 h-14 border-2 border-fuchsia-300/30 rounded-full flex justify-center p-1 relative shadow-[0_0_15px_rgba(192,38,211,0.2)] group-hover:border-fuchsia-300/60 transition-colors">
+              <motion.div 
+                animate={{ 
+                  y: [0, 24, 0],
+                  opacity: [1, 0, 1],
+                  scale: [1, 0.8, 1]
+                }}
+                transition={{ 
+                  repeat: Infinity, 
+                  duration: 2,
+                  ease: "easeInOut"
+                }}
+                className="w-1.5 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.8)]"
+              />
+            </div>
+            <motion.div 
+              animate={{ y: [0, 8, 0], opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
+              className="mt-2 text-fuchsia-300/70 group-hover:text-fuchsia-300 transition-colors"
+            >
+              <ChevronDown size={24} />
+            </motion.div>
           </motion.div>
         </div>
       </header>
@@ -367,7 +349,15 @@ export default function App() {
 
       {/* Benefits */}
       <section className="py-16 px-4 max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12 text-gray-800">El secreto para tu belleza natural</h2>
+        <motion.h2 
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12 text-gray-800"
+        >
+          El secreto para tu belleza natural
+        </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { title: "Piel más firme y elástica", desc: "Reduce líneas de expresión y recupera el brillo natural de tu rostro.", img: "img1.jpeg", fallback: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=400", icon: Droplets },
@@ -429,8 +419,15 @@ export default function App() {
       {/* Before & After Grid */}
       <section className="bg-fuchsia-50 py-16 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-4 text-gray-800">Resultados Reales</h2>
-          <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Miles de mujeres ya están viendo la diferencia en semanas. ¡Tú puedes ser la siguiente!</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-4 text-gray-800">Resultados Reales</h2>
+            <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Miles de mujeres ya están viendo la diferencia en semanas. ¡Tú puedes ser la siguiente!</p>
+          </motion.div>
           
           <motion.div 
             initial="hidden"
@@ -460,11 +457,28 @@ export default function App() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-fuchsia-900 text-white py-16 px-4 overflow-hidden">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12">Lo que dicen nuestras clientas</h2>
+      <section className="relative text-white py-16 px-4 overflow-hidden bg-fuchsia-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-fuchsia-800 via-fuchsia-950 to-black opacity-80"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay"></div>
+        
+        <div className="max-w-4xl mx-auto relative z-10">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12"
+          >
+            Lo que dicen nuestras clientas
+          </motion.h2>
           
-          <div className="relative h-[380px] md:h-[300px] flex items-center justify-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative h-[380px] md:h-[300px] flex items-center justify-center"
+          >
             <button 
               onClick={prevReview} 
               className="absolute left-0 md:-left-12 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors"
@@ -519,7 +533,7 @@ export default function App() {
             >
               <ChevronRight className="text-white" size={24} />
             </button>
-          </div>
+          </motion.div>
 
           {/* Dots */}
           <div className="flex justify-center gap-2 mt-8">
@@ -560,8 +574,17 @@ export default function App() {
       </section>
 
       {/* Order Form Section */}
-      <section ref={formRef} className="py-16 px-4 max-w-5xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col md:flex-row">
+      <section ref={formRef} className="py-16 px-4 max-w-5xl mx-auto relative">
+        {/* Glow behind the form */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-full bg-fuchsia-400 rounded-full mix-blend-multiply filter blur-[120px] opacity-20"></div>
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(192,38,211,0.3)] border border-fuchsia-100 overflow-hidden flex flex-col md:flex-row ring-4 ring-white/50"
+        >
           
           {/* Left Side: Offer Summary */}
           <div className="bg-fuchsia-50 p-8 md:w-2/5 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-fuchsia-100">
@@ -570,7 +593,7 @@ export default function App() {
             <p className="text-gray-600 mb-6">Completa tus datos para asegurar tu promoción antes de que se agote.</p>
             
             <div className="bg-white rounded-2xl p-6 border-2 border-dashed border-fuchsia-200 w-full">
-              <p className="text-fuchsia-800 font-bold text-lg mb-1">OFERTA EXCLUSIVA HOY</p>
+              <p className="text-fuchsia-800 font-bold text-lg mb-1">OFERTA EXCLUSIVA POR SEMANA SANTA</p>
               <div className="flex items-center justify-center gap-3 mb-2">
                 <span className="text-xl text-gray-400 line-through font-bold">S/ 218.00</span>
                 <span className="text-4xl font-display font-bold text-fuchsia-600">S/ 109.00</span>
@@ -578,38 +601,15 @@ export default function App() {
               <p className="text-sm font-bold text-green-600 mb-4 bg-green-50 py-1 rounded-full">¡LLEVAS 2 UNIDADES!</p>
               
               {/* Scarcity Bar */}
-              <div className="relative mt-8 p-6 bg-gradient-to-br from-orange-50/50 to-red-50/50 rounded-2xl border border-orange-100/80 shadow-inner">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-orange-200 shadow-sm">
-                  <span className="text-xs font-bold text-gray-700 tracking-wider">ESTADO DEL INVENTARIO</span>
+              <div className="w-full text-left mt-4">
+                <div className="flex justify-between text-xs font-bold text-red-600 mb-1">
+                  <span>🔥 Alta demanda</span>
+                  <span>87% Vendido</span>
                 </div>
-                
-                <div className="flex justify-between items-end mb-3 mt-2">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                  </div>
-                  <div className="bg-red-50 border border-red-100 px-3 py-1 rounded-full">
-                    <span className="text-sm font-bold text-red-600 tracking-wide">SOLO {stock} UNIDADES</span>
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-red-600 h-2.5 rounded-full" style={{ width: '87%' }}></div>
                 </div>
-
-                <div className="h-3.5 w-full bg-gray-200/80 rounded-full overflow-hidden shadow-inner p-0.5">
-                  <div 
-                    className="h-full rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 transition-all duration-1000 ease-out relative"
-                    style={{ width: `${Math.max(10, (stock / 15) * 100)}%` }}
-                  >
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[stripes_1s_linear_infinite]" />
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center mt-3 text-xs">
-                  <span className="text-orange-600/80 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-                    Actualizado hace unos segundos - Alta demanda detectada
-                  </span>
-                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">Solo quedan 9 promos disponibles</p>
               </div>
             </div>
           </div>
@@ -637,6 +637,33 @@ export default function App() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Dirección exacta *</label>
                 <input required type="text" name="direccion" value={formData.direccion} onChange={(e) => setFormData({...formData, direccion: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-fuchsia-500 outline-none transition-all" placeholder="Av. / Calle / Nro / Dpto" />
+                
+                <button 
+                  type="button" 
+                  onClick={handleGetLocation}
+                  disabled={isLocating || !!formData.coordenadas}
+                  className={`mt-2 w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                    formData.coordenadas 
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 hover:bg-fuchsia-100'
+                  }`}
+                >
+                  {isLocating ? (
+                    <span className="flex items-center gap-2">
+                      <span className="animate-spin h-4 w-4 border-2 border-fuchsia-700 border-t-transparent rounded-full"></span>
+                      Obteniendo ubicación...
+                    </span>
+                  ) : formData.coordenadas ? (
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 size={16} /> Ubicación GPS capturada
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <MapPin size={16} /> Compartir mi ubicación actual (Ayuda al repartidor)
+                    </span>
+                  )}
+                </button>
+                {locationError && <p className="text-red-500 text-xs mt-1">{locationError}</p>}
               </div>
 
               <div>
@@ -671,7 +698,7 @@ export default function App() {
               </div>
             </form>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* FAQ Section */}
@@ -730,7 +757,13 @@ export default function App() {
 
       {/* Shipping Banner (Pago contra entrega, Shalom, Olva) */}
       <section className="py-12 px-4 bg-white border-t border-gray-200 pb-16">
-        <div className="max-w-4xl mx-auto text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto text-center"
+        >
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <Truck size={40} />
           </div>
@@ -741,7 +774,7 @@ export default function App() {
             <div className="text-2xl font-black italic text-red-600">SHALOM</div>
             <div className="text-2xl font-black italic text-blue-600">OLVA</div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer / Legal for TikTok Ads */}
