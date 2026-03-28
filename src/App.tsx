@@ -58,6 +58,13 @@ export default function App() {
       time: "Hace 1 mes",
       img: "https://randomuser.me/api/portraits/women/26.jpg", 
       text: "Soy muy exigente con los suplementos y este cumple todo lo que promete. La absorción es real. En menos de un mes mi cabello recuperó su brillo y mi piel se siente súper hidratada. Aprovecharé el 2x1 para pedir más." 
+    },
+    { 
+      name: "Javier Luna", 
+      city: "Chiclayo", 
+      time: "Hace 2 días",
+      img: "https://randomuser.me/api/portraits/men/32.jpg", 
+      text: "Increíble el cambio. Me siento con mucha más energía durante el día y mi bienestar general ha mejorado muchísimo. Ya no siento esa pesadez de antes al levantarme. ¡Totalmente recomendado!" 
     }
   ];
 
@@ -145,9 +152,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 selection:bg-fuchsia-200">
+      {/* Announcement Bar */}
+      <div className="bg-yellow-400 text-black text-center py-2 px-4 font-display font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 animate-pulse">
+        🔥 ¡OFERTA 2X1 SOLO POR HOY + ENVÍO GRATIS! 🔥
+      </div>
+
       {/* Sticky CTA for Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 md:hidden shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)]">
-        <button onClick={scrollToForm} className="w-full bg-yellow-400 text-black font-black text-xl py-4 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] flex items-center justify-center gap-2 mb-2 border-2 border-yellow-300 active:scale-95 transition-transform">
+        <button onClick={scrollToForm} className="w-full bg-yellow-400 text-black font-display font-bold text-2xl tracking-wide py-4 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] flex items-center justify-center gap-2 mb-2 border-2 border-yellow-300 active:scale-95 transition-transform">
           ¡QUIERO MI PROMO 2x1! <ArrowRight size={24} />
         </button>
         <div className="flex justify-center items-center gap-3 text-[10px] sm:text-xs text-gray-600 font-bold">
@@ -176,10 +188,25 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight mb-6"
+            className="text-4xl sm:text-5xl md:text-7xl font-display font-bold leading-tight mb-4 tracking-tight"
           >
             PIEL MÁS FIRME, <span className="text-fuchsia-300">CABELLO MÁS FUERTE</span> Y UÑAS SIN QUIEBRE
           </motion.h1>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            className="mb-8 flex flex-col items-center justify-center"
+          >
+            <div className="flex items-center gap-4 mb-2">
+              <span className="text-2xl md:text-3xl text-fuchsia-300 line-through font-bold opacity-70">S/ 218.00</span>
+              <span className="text-5xl md:text-6xl text-yellow-400 font-display font-bold drop-shadow-lg">S/ 109.00</span>
+            </div>
+            <div className="bg-fuchsia-600 text-white px-4 py-1.5 rounded-full font-bold text-sm md:text-base tracking-wide border border-fuchsia-400 shadow-lg">
+              ¡LLEVAS 2 POR EL PRECIO DE 1!
+            </div>
+          </motion.div>
 
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -224,7 +251,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="hidden md:flex mx-auto bg-yellow-400 hover:bg-yellow-300 text-black font-black text-2xl py-4 px-12 rounded-full shadow-[0_0_30px_rgba(250,204,21,0.4)] transition-all transform hover:scale-105 items-center gap-3"
+            className="hidden md:flex mx-auto bg-yellow-400 hover:bg-yellow-300 text-black font-display font-bold text-3xl tracking-wide py-4 px-12 rounded-full shadow-[0_0_30px_rgba(250,204,21,0.4)] transition-all transform hover:scale-105 items-center gap-3"
           >
             ¡COMPRAR AHORA! <ArrowRight size={28} />
           </motion.button>
@@ -262,7 +289,7 @@ export default function App() {
 
       {/* Benefits */}
       <section className="py-16 px-4 max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">El secreto para tu belleza natural</h2>
+        <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12 text-gray-800">El secreto para tu belleza natural</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { title: "Piel más firme y elástica", desc: "Reduce líneas de expresión y recupera el brillo natural de tu rostro.", img: "img1.jpeg", fallback: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=400", icon: Droplets },
@@ -287,7 +314,7 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-fuchsia-800 mb-1 md:mb-2 group-hover:text-fuchsia-600 transition-colors duration-300">{benefit.title}</h3>
+                <h3 className="text-xl sm:text-2xl font-display font-bold uppercase tracking-wide text-fuchsia-800 mb-1 md:mb-2 group-hover:text-fuchsia-600 transition-colors duration-300">{benefit.title}</h3>
                 <p className="text-sm sm:text-base text-gray-600">{benefit.desc}</p>
               </div>
             </motion.div>
@@ -310,9 +337,12 @@ export default function App() {
             <Award size={48} />
           </div>
           <div className="text-center md:text-left z-10">
-            <h3 className="text-2xl sm:text-3xl font-black text-yellow-400 mb-3">Garantía de Resultados 100%</h3>
+            <div className="inline-block bg-yellow-400 text-fuchsia-900 font-bold px-3 py-1 rounded-full text-xs sm:text-sm mb-3">
+              SATISFACCIÓN GARANTIZADA
+            </div>
+            <h3 className="text-2xl sm:text-4xl font-display font-bold uppercase tracking-wide text-yellow-400 mb-3">Garantía de 30 Días</h3>
             <p className="text-fuchsia-100 text-base sm:text-lg leading-relaxed">
-              Estamos tan seguros de la calidad de nuestro Multi Collagen Peptides que te ofrecemos una garantía total. Si no notas la diferencia en tu piel, cabello y uñas, te devolvemos tu dinero. <strong className="text-white">¡Compra hoy sin ningún riesgo!</strong>
+              Estamos tan seguros de la calidad de nuestro Multi Collagen Peptides que te ofrecemos una <strong className="text-white">Garantía de Devolución de Dinero de 30 Días</strong>. Si el producto no cumple con tus expectativas o no notas la diferencia en tu piel, cabello y uñas, te devolvemos el 100% de tu dinero sin hacer preguntas. <strong className="text-yellow-400">¡Compra hoy sin ningún riesgo!</strong>
             </p>
           </div>
         </motion.div>
@@ -321,7 +351,7 @@ export default function App() {
       {/* Before & After Grid */}
       <section className="bg-fuchsia-50 py-16 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-800">Resultados Reales</h2>
+          <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-4 text-gray-800">Resultados Reales</h2>
           <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Miles de mujeres ya están viendo la diferencia en semanas. ¡Tú puedes ser la siguiente!</p>
           
           <motion.div 
@@ -354,7 +384,7 @@ export default function App() {
       {/* Testimonials */}
       <section className="bg-fuchsia-900 text-white py-16 px-4 overflow-hidden">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Lo que dicen nuestras clientas</h2>
+          <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12">Lo que dicen nuestras clientas</h2>
           
           <div className="relative h-[380px] md:h-[300px] flex items-center justify-center">
             <button 
@@ -458,19 +488,34 @@ export default function App() {
           {/* Left Side: Offer Summary */}
           <div className="bg-fuchsia-50 p-8 md:w-2/5 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-fuchsia-100">
             <img src="/multicollagen3.webp" alt="Promo 2x1" loading="lazy" decoding="async" fetchPriority="low" width="192" height="192" className="w-48 h-48 object-cover rounded-full shadow-lg mb-6 border-4 border-white" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Estás a un paso!</h2>
+            <h2 className="text-3xl font-display font-bold uppercase tracking-wide text-gray-800 mb-2">¡Estás a un paso!</h2>
             <p className="text-gray-600 mb-6">Completa tus datos para asegurar tu promoción antes de que se agote.</p>
             
             <div className="bg-white rounded-2xl p-6 border-2 border-dashed border-fuchsia-200 w-full">
               <p className="text-fuchsia-800 font-bold text-lg mb-1">OFERTA EXCLUSIVA HOY</p>
-              <p className="text-4xl font-black text-fuchsia-600 mb-2">2 x S/109.00</p>
-              <p className="text-sm text-gray-500">Envío disponible a nivel nacional</p>
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <span className="text-xl text-gray-400 line-through font-bold">S/ 218.00</span>
+                <span className="text-4xl font-display font-bold text-fuchsia-600">S/ 109.00</span>
+              </div>
+              <p className="text-sm font-bold text-green-600 mb-4 bg-green-50 py-1 rounded-full">¡LLEVAS 2 UNIDADES!</p>
+              
+              {/* Scarcity Bar */}
+              <div className="w-full text-left mt-4">
+                <div className="flex justify-between text-xs font-bold text-red-600 mb-1">
+                  <span>🔥 Alta demanda</span>
+                  <span>87% Vendido</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-red-600 h-2.5 rounded-full" style={{ width: '87%' }}></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">Solo quedan 9 promos disponibles</p>
+              </div>
             </div>
           </div>
 
           {/* Right Side: Form */}
           <div className="p-8 md:w-3/5">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Ingresa tus datos para el envío</h3>
+            <h3 className="text-2xl font-display font-bold uppercase tracking-wide text-gray-800 mb-6">Ingresa tus datos para el envío</h3>
             <form onSubmit={handleWhatsAppOrder} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre y Apellidos *</label>
@@ -509,13 +554,19 @@ export default function App() {
                 </select>
               </div>
 
-              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-lg sm:text-xl py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 mt-6">
-                CONFIRMAR MI COMPRA <ArrowRight size={24} />
+              <button type="submit" className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-display font-bold text-xl sm:text-2xl tracking-wide py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 mt-6">
+                ¡QUIERO MI PROMO 2X1 AHORA! <ArrowRight size={24} />
               </button>
               
-              <div className="flex justify-center items-center gap-4 mt-4 text-xs text-gray-500 font-medium">
-                <span className="flex items-center gap-1"><Lock size={14} className="text-green-600" /> Datos Seguros</span>
-                <span className="flex items-center gap-1"><ShieldCheck size={14} className="text-blue-600" /> SSL Certificado</span>
+              <div className="flex flex-col items-center gap-3 mt-4">
+                <div className="flex justify-center items-center gap-4 text-xs text-gray-500 font-medium">
+                  <span className="flex items-center gap-1"><Lock size={14} className="text-green-600" /> Datos Seguros</span>
+                  <span className="flex items-center gap-1"><ShieldCheck size={14} className="text-blue-600" /> SSL Certificado</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-fuchsia-800 bg-fuchsia-50 px-3 py-1.5 rounded-full border border-fuchsia-100">
+                  <Award size={16} className="text-yellow-500" />
+                  Garantía de Devolución de 30 Días
+                </div>
               </div>
             </form>
           </div>
@@ -525,7 +576,7 @@ export default function App() {
       {/* FAQ Section */}
       <section className="bg-fuchsia-50 py-16 px-4 border-t border-fuchsia-100">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">Preguntas Frecuentes</h2>
+          <h2 className="text-3xl md:text-5xl font-display font-bold uppercase tracking-wide text-center mb-12 text-gray-800">Preguntas Frecuentes</h2>
           <div className="space-y-4">
             {[
               {
@@ -547,6 +598,10 @@ export default function App() {
               {
                 q: "¿Hacen envíos a provincia y puedo pagar al recibir?",
                 a: "¡Sí! Hacemos envíos a todo el Perú mediante Olva Courier y Shalom. Además, contamos con la opción de pago contra entrega (pagas al recibir) en la mayoría de ciudades principales."
+              },
+              {
+                q: "¿Cómo funciona la garantía de 30 días?",
+                a: "Confiamos tanto en nuestro producto que si lo usas diariamente y no notas mejoras en tu piel, cabello o uñas en los primeros 30 días, te devolvemos el 100% de tu dinero. Solo contáctanos y procesaremos tu reembolso sin hacer preguntas."
               }
             ].map((faq, idx) => (
               <motion.details 
@@ -578,7 +633,7 @@ export default function App() {
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <Truck size={40} />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">PAGO CONTRA ENTREGA</h2>
+          <h2 className="text-3xl md:text-4xl font-display font-bold uppercase tracking-wide text-gray-800 mb-4">PAGO CONTRA ENTREGA</h2>
           <p className="text-lg text-gray-600 mb-8">Paga en casa al recibir tu pedido. 100% Seguro a todo el Perú.</p>
           
           <div className="flex justify-center items-center gap-8 grayscale opacity-60">
@@ -608,9 +663,9 @@ export default function App() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-50 md:hidden flex justify-center">
         <button 
           onClick={scrollToForm} 
-          className="w-full max-w-sm bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xl py-4 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] flex items-center justify-center gap-2 border-2 border-yellow-300 active:scale-95 transition-transform"
+          className="w-full max-w-sm bg-yellow-400 hover:bg-yellow-300 text-black font-display font-bold text-2xl tracking-wide py-4 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.5)] flex items-center justify-center gap-2 border-2 border-yellow-300 active:scale-95 transition-transform animate-[pulse_2s_ease-in-out_infinite]"
         >
-          COMPRAR AHORA <ArrowRight size={20} />
+          COMPRAR AHORA <ArrowRight size={24} />
         </button>
       </div>
     </div>
