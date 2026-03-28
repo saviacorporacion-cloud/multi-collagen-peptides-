@@ -300,28 +300,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* FLOATING STOCK BADGE */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div className="fixed bottom-20 sm:bottom-6 left-3 z-50" onClick={scrollToForm}>
-        <div className="bg-white/95 backdrop-blur-xl px-3 py-2 rounded-2xl shadow-2xl border border-red-100 flex items-center gap-2.5 cursor-pointer hover:scale-105 transition-all">
-          <div className="relative flex-shrink-0">
-            <div className="absolute -inset-1 bg-red-500 rounded-xl animate-ping opacity-10"></div>
-            <div className="w-9 h-9 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/30">
-              <Flame className="w-4 h-4 animate-pulse" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-1 mb-0.5">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-[8px] font-black text-red-600 tracking-widest uppercase">¡Alta Demanda!</span>
-            </div>
-            <p className="text-[11px] font-black text-gray-800 leading-tight">
-              Quedan <span className="text-red-600 text-sm tabular-nums">{stock}</span> uds.
-            </p>
-          </div>
-        </div>
-      </div>
+
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/* MOBILE STICKY CTA */}
