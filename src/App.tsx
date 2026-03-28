@@ -342,6 +342,10 @@ export default function App() {
               className="w-full h-full object-cover"
               loading="eager"
             />
+            {/* Sello Producto Original */}
+            <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-yellow-300 text-fuchsia-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-[0_4px_15px_rgba(250,204,21,0.5)] flex items-center gap-1.5 border border-yellow-200 backdrop-blur-sm z-10 animate-float">
+              <ShieldCheck className="w-3.5 h-3.5" /> 100% Original
+            </div>
           </div>
 
           <div className="flex justify-center items-center gap-4 mt-5 text-fuchsia-200 text-[10px] font-bold">
@@ -553,10 +557,13 @@ export default function App() {
           </div>
 
           {/* Product Card inside form */}
-          <div className="bg-gradient-to-r from-fuchsia-900/80 to-purple-900/80 backdrop-blur-xl rounded-2xl p-4 mb-5 border border-fuchsia-500/20 shadow-xl">
+          <div className="relative bg-gradient-to-r from-fuchsia-900/80 to-purple-900/80 backdrop-blur-xl rounded-2xl p-4 mb-5 border border-fuchsia-500/20 shadow-xl overflow-hidden">
+            <div className="absolute top-0 right-0 bg-yellow-400 text-fuchsia-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-bl-lg shadow-md flex items-center gap-1 z-10">
+              <ShieldCheck className="w-3 h-3" /> Original
+            </div>
             <div className="flex items-center gap-4">
-              <img src="/multicollagen3.webp" alt="Multi Collagen Peptides" className="w-20 h-20 object-contain rounded-xl bg-white/10 p-1 flex-shrink-0" />
-              <div className="flex-1">
+              <img src="/multicollagen3.webp" alt="Multi Collagen Peptides" className="w-20 h-20 object-contain rounded-xl bg-white/10 p-1 flex-shrink-0 relative z-10" />
+              <div className="flex-1 relative z-10">
                 <p className="text-[10px] font-bold text-fuchsia-300 uppercase tracking-widest mb-0.5">Promo exclusiva</p>
                 <h3 className="text-base font-black text-white leading-tight mb-1">2x Multi Collagen Peptides</h3>
                 <div className="flex items-center gap-2">
