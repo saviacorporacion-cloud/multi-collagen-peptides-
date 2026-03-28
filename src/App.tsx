@@ -30,6 +30,7 @@ export default function App() {
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'granted' | 'denied'>('idle');
   const [showScrollIndicator, setShowScrollIndicator] = useState(true);
+  const [showFloatingCTA, setShowFloatingCTA] = useState(false);
 
   const baImages = [
     { src: '/img7.jpeg', label: 'Piel del Rostro' },
@@ -110,6 +111,14 @@ export default function App() {
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 200) setShowScrollIndicator(false);
+
+      const formEl = formRef.current;
+      let formVisible = false;
+      if (formEl) {
+        const rect = formEl.getBoundingClientRect();
+        formVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      }
+      setShowFloatingCTA(window.scrollY > window.innerHeight * 0.4 && !formVisible);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -806,6 +815,25 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* 9. Floating CTA Bottom */}
+      <div className={`fixed bottom-4 left-0 right-0 z-50 px-4 pointer-events-none flex flex-col items-center transition-all duration-[400ms] ease-out ${showFloatingCTA ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0'}`}>
+        <div className="pointer-events-auto w-full max-w-[280px] md:max-w-[320px] flex flex-col items-center gap-1.5 drop-shadow-2xl">
+          {/* Synchronized Stock Mini Badge */}
+          <div className="bg-red-600/95 backdrop-blur-sm text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-red-400/30">
+            <Flame className="w-3.5 h-3.5 animate-pulse" /> 
+            <span>¡SOLO QUEDAN <span className="text-yellow-300 mx-0.5 text-xs">{stock}</span> UNIDADES!</span>
+          </div>
+          {/* Main CTA */}
+          <button 
+            onClick={scrollToForm}
+            className="w-full bg-gradient-to-r from-[#25D366] to-[#20bd5a] hover:from-[#20bd5a] hover:to-[#1da851] text-white font-black py-3.5 rounded-full shadow-[0_8px_25px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_30px_rgba(37,211,102,0.6)] active:scale-95 transition-all flex justify-center items-center gap-2 text-base uppercase tracking-wide border-[3px] border-white/90 animate-bounce-slow"
+          >
+            🛒 COMPRAR AHORA
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
