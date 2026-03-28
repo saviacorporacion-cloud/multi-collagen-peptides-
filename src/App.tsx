@@ -130,10 +130,15 @@ export default function App() {
         });
         setGeoStatus('granted');
       },
-      () => {
+      (error) => {
         setGeoStatus('denied');
+        if (error.code === 1) {
+          alert('📍 El acceso a tu ubicación fue denegado. Por favor, actívalo en la configuración de la página (ícono del candado junto a la URL) para enviarnos tus coordenadas exactas.');
+        } else {
+          alert('📍 Tuvimos un problema capturando tu ubicación. Por favor, asegúrate de tener el GPS encendido e inténtalo de nuevo.');
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -190,6 +195,13 @@ export default function App() {
       if (!validateField(f, formData[f as keyof typeof formData])) allValid = false;
     });
     setTouched(newTouched);
+    
+    if (geoStatus !== 'granted' || !userCoords) {
+      alert("📍 Por favor, permite el acceso a tu ubicación exacta o toca el botón 'Compartir ubicación'. Es REQUISITO OBLIGATORIO para que el transportista pueda entregar tu pedido correctamente.");
+      if (geoStatus !== 'loading') requestLocation();
+      return;
+    }
+
     if (!allValid) return;
     setIsConfirmModalOpen(true);
   };
@@ -332,16 +344,7 @@ export default function App() {
             />
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={scrollToForm}
-            className="w-full max-w-sm mx-auto mt-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black text-lg py-4 rounded-2xl shadow-[0_0_40px_rgba(37,211,102,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-5 h-5" />
-            ¡QUIERO SABER MÁS!
-          </button>
-
-          <div className="flex justify-center items-center gap-4 mt-2 text-fuchsia-200 text-[10px] font-bold">
+          <div className="flex justify-center items-center gap-4 mt-5 text-fuchsia-200 text-[10px] font-bold">
             <span className="flex items-center gap-1"><Lock className="w-3 h-3 text-green-400" /> Pago Seguro</span>
             <span className="flex items-center gap-1"><Truck className="w-3 h-3 text-blue-400" /> Envío Gratis</span>
             <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-yellow-400" /> Garantía 30d</span>
@@ -541,10 +544,10 @@ export default function App() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fuchsia-500/20 border border-fuchsia-400/20 text-fuchsia-300 text-[10px] font-bold mb-3 uppercase tracking-widest">
               <Package className="w-3 h-3" /> Paso final
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-black text-yellow-400 mb-2 tracking-tight leading-tight drop-shadow-md">
               ¡Confirma tu pedido<br/>y recíbelo en casa! 🏠
             </h2>
-            <p className="text-fuchsia-300/80 text-xs font-medium">
+            <p className="text-fuchsia-100/90 text-xs font-medium">
               Paga al recibir · Sin riesgos · Envío gratis
             </p>
           </div>
@@ -681,16 +684,6 @@ export default function App() {
                     <span className="font-bold text-[10px]">Tu ubicación se solicitará automáticamente</span>
                   )}
                 </div>
-              </div>
-
-              {/* Location note */}
-              <div className="rounded-xl border border-fuchsia-100 bg-fuchsia-50/30 p-3 flex items-start gap-2.5">
-                <div className="w-8 h-8 bg-fuchsia-100 rounded-lg flex items-center justify-center text-fuchsia-600 shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <p className="text-[10px] text-fuchsia-800/80 leading-relaxed font-medium">
-                  Un asesor confirmará tu pedido y te enviará la <strong>guía del transportista</strong> al instante por WhatsApp.
-                </p>
               </div>
 
               {/* Submit Button */}
