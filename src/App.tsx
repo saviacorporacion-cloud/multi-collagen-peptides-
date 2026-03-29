@@ -340,16 +340,20 @@ export default function App() {
             El Multi Colágeno #1 en Perú. 5 tipos de colágeno + Biotina + Ácido Hialurónico
           </p>
 
-          {/* Hero Image */}
-          <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-2 border-white/10 mx-auto max-w-sm flex-1 min-h-0 w-full">
-            <img
-              src="/img1.jpeg"
-              alt="Multi Collagen Peptides - Piel más firme, cabello más fuerte y uñas sin quiebre"
-              className="w-full h-full object-cover"
-              loading="eager"
+          {/* Hero Media (Cinemagraph / Promo Video) */}
+          <div className="relative rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-2 border-white/10 mx-auto max-w-sm flex-1 min-h-[350px] w-full bg-black">
+            <video
+              src="/nuevo_video_colageno.mp4"
+              className="w-full h-full object-cover absolute inset-0"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster="/img1.jpeg"
             />
             {/* Sello Producto Original */}
-            <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-yellow-300 text-fuchsia-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-[0_4px_15px_rgba(250,204,21,0.5)] flex items-center gap-1.5 border border-yellow-200 backdrop-blur-md z-10 animate-float">
+            <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-500 to-yellow-300 text-fuchsia-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-[0_4px_15px_rgba(250,204,21,0.5)] flex items-center gap-1.5 border border-yellow-200 backdrop-blur-md z-10 animate-float">
               <ShieldCheck className="w-3.5 h-3.5" /> 100% Original
             </div>
           </div>
@@ -542,20 +546,16 @@ export default function App() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* SHOWCASE DEMO VIDEO (SILENT) */}
+      {/* SHOWCASE DEMO IMAGE */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="py-6 px-4 bg-fuchsia-50/30">
         <div className="max-w-lg mx-auto">
           <div className="rounded-3xl overflow-hidden shadow-2xl border border-fuchsia-100 bg-black relative">
-            <video
-              src="/nuevo_video_colageno.mp4"
+            <img
+              src="/img1.jpeg"
               className="w-full h-auto object-cover max-h-[80vh]"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              poster="/img1.jpeg"
+              alt="Multi Collagen Peptides Demo"
+              loading="lazy"
             />
           </div>
         </div>
